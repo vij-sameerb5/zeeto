@@ -1,0 +1,12 @@
+{
+  "name": "zeeto",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Zeeto: find street vendors near you, order for pickup, pay in stablecoins.",
+  "workspaces": ["apps/web", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w @zeeto/web",
+    "build": "npm run build -w @zeeto/web",
+    "typecheck": "npm run typecheck -w @zeeto/web"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-preview
+.expo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+sameers-learning.txt
