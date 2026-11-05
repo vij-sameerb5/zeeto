@@ -13,5 +13,6 @@ none of its code is in this repository.
 |---|---|---|---|
 | Nov 5, 21:05 | Claude | Repo scaffold, monorepo config | root files |
 | Nov 5, 21:15 | Claude | Shared core: types, rails, demo data, mock services | `packages/core` |
+| Nov 5, 21:35 | Claude | Web app shell, design tokens, landing page with video hero | `apps/web` |
 
 Human decisions: product idea, features, prize selection, design direction, vendor research, testing and review.
