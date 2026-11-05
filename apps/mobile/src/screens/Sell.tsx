@@ -8,6 +8,7 @@ import { MY_STALL, useApp } from '../store';
 import { C, mono } from '../theme';
 import { Bar, Btn, Face, Label, Pic, Sim, s as ui } from '../ui';
 import { STATUS } from './Order';
+import { WEB_URL, openWeb } from '../web';
 
 type Seg = 'orders' | 'snap' | 'stock';
 
@@ -32,6 +33,7 @@ export default function Sell() {
           </View>
         </View>
 
+        {!!WEB_URL && <Btn title="Collect payment · show QR" onPress={() => openWeb('/sell/collect')} />}
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Metric label="Today" value={inr(today.reduce((a, o) => a + o.inr, 0))} />
           <Metric label="Open orders" value={String(open)} hot={open > 0} />

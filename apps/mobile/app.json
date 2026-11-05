@@ -29,6 +29,14 @@
           "cameraPermission": "Take a photo of your stock to create listings.",
           "photosPermission": "Pick a photo of your stock to create listings."
         }
+      ],
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Zeeto uses the camera to scan a stall\u2019s payment QR.",
+          "recordAudioAndroid": false
+        }
       ]
     ]
   }

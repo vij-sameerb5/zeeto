@@ -96,13 +96,15 @@ export default function Stall() {
                     {p.freshUntil && <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-good backdrop-blur">Fresh</span>}
                     {p.stock > 0 && p.stock <= 10 && <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-warn backdrop-blur">{p.stock} left</span>}
                   </div>
-                  <div className="flex items-end justify-between gap-2 p-3">
+                  <div className="flex flex-col gap-2 p-3">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{p.name}</div>
+                      <div className="line-clamp-2 text-sm font-semibold leading-snug">{p.name}</div>
                       {p.local && <div className="truncate text-xs text-dim">{p.local}</div>}
-                      <div className="mt-1 text-sm nums"><b className="text-z">{inr(p.priceInr)}</b><span className="text-mute"> / {UNITS[p.unit]}</span></div>
                     </div>
-                    <Qty qty={mine[p.id] ?? 0} max={p.stock} onChange={(q) => setQty(v.id, p.id, q)} />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="whitespace-nowrap text-sm nums"><b className="text-z">{inr(p.priceInr)}</b><span className="text-mute"> /{UNITS[p.unit]}</span></div>
+                      <Qty qty={mine[p.id] ?? 0} max={p.stock} onChange={(q) => setQty(v.id, p.id, q)} />
+                    </div>
                   </div>
                 </li>
               ))}

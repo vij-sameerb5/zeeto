@@ -14,7 +14,7 @@ h1, h2, h3 { text-wrap: balance; }
   .mega { font-weight: 900; letter-spacing: -0.06em; line-height: 0.82; }
   .label { @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-mute; }
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[15px] font-semibold transition duration-200 active:scale-[.97] disabled:pointer-events-none disabled:opacity-40; }
-  .btn-z { @apply btn bg-z text-z-ink hover:brightness-110; }
+  .btn-z { @apply btn bg-z text-z-ink hover:brightness-110 disabled:bg-raised disabled:text-dim disabled:opacity-100 disabled:shadow-none; }
   .btn-chalk { @apply btn bg-chalk text-bg hover:bg-white; }
   .btn-line { @apply btn border border-line-2 bg-white/[.03] hover:bg-white/[.07]; }
   .pill { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-panel px-3.5 py-2 text-[13px] font-medium transition hover:border-line-2; }

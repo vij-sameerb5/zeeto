@@ -10,6 +10,7 @@ import Feed from './screens/Feed';
 import OrderScreen from './screens/Order';
 import Orders from './screens/Orders';
 import Points from './screens/Points';
+import Scan from './screens/Scan';
 import Sell from './screens/Sell';
 import Stall from './screens/Stall';
 import Wallet from './screens/Wallet';
@@ -51,6 +52,7 @@ export default function App() {
           {top.name === 'bag' && <Bag />}
           {top.name === 'order' && <OrderScreen id={top.id} />}
           {top.name === 'sell' && <Sell />}
+          {top.name === 'scan' && <Scan />}
         </View>
       </NavContext.Provider>
     </SafeAreaProvider>

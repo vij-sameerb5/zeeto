@@ -10,12 +10,19 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
+    "@privy-io/react-auth": "3.50.0",
+    "@solana-program/memo": "0.16.0",
+    "@solana-program/system": "0.16.0",
+    "@solana-program/token": "0.18.0",
+    "@solana/kit": "8.5.0",
     "@zeeto/core": "0.1.0",
     "lucide-react": "0.460.0",
+    "mapbox-gl": "3.33.0",
     "qrcode.react": "4.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "6.28.0",
+    "viem": "2.57.7",
     "zustand": "4.5.5"
   },
   "devDependencies": {

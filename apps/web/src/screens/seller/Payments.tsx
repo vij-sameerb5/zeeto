@@ -65,19 +65,23 @@ export default function Payments() {
             const rail = RAILS[p.rail];
             const back = o.refunds.reduce((a, r) => a + r.amount, 0);
             return (
-              <li key={o.id} className="panel flex flex-wrap items-center gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold">{o.customer} · <span className="font-mono">{o.id.toUpperCase()}</span> <span className="text-sm font-normal text-mute">· {inr(o.inr)}</span></div>
-                  <div className="text-xs text-mute">{rail.label} · {rail.network} · {ago(p.at)}</div>
-                  <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-dim">
-                    {p.simulated ? <>tx {short(p.tx)} <Sim /></> : <a href={rail.txUrl(p.tx)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-z">tx {short(p.tx)} <ExternalLink size={11} /></a>}
+              <li key={o.id} className="panel flex flex-col gap-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold">{o.customer} · <span className="font-mono">{o.id.toUpperCase()}</span> <span className="text-sm font-normal text-mute">· {inr(o.inr)}</span></div>
+                    <div className="truncate text-xs text-mute">{rail.label} · {rail.network} · {ago(p.at)}</div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="whitespace-nowrap font-mono text-lg font-bold text-good nums">+{p.settled.toFixed(2)} {p.settledToken}</div>
+                    {back > 0 && <div className="font-mono text-xs text-warn">−{back.toFixed(2)} refunded</div>}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono text-lg font-bold text-good nums">+{p.settled.toFixed(2)} {p.settledToken}</div>
-                  {back > 0 && <div className="font-mono text-xs text-warn">−{back.toFixed(2)} refunded</div>}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-dim">
+                    {p.simulated ? <><span className="truncate">tx {short(p.tx)}</span> <Sim /></> : <a href={rail.txUrl(p.tx)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-z">tx {short(p.tx)} <ExternalLink size={11} /></a>}
+                  </div>
+                  {o.status !== 'refunded' && <button onClick={() => { setRef(o); setAmt(String((p.settled - back).toFixed(2))); }} className="btn-line shrink-0 px-3 py-1.5 text-xs"><Undo2 size={14} /> Refund</button>}
                 </div>
-                {o.status !== 'refunded' && <button onClick={() => { setRef(o); setAmt(String((p.settled - back).toFixed(2))); }} className="btn-line px-3 py-2 text-xs"><Undo2 size={14} /> Refund</button>}
               </li>
             );
           })}

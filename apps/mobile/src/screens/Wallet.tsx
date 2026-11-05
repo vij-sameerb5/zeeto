@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ME, RAILS, VENDORS, ago, mockPayments, short, type Balance } from '@zeeto/core';
 import { useNav } from '../nav';
+import { WEB_URL, openWeb } from '../web';
 import { useApp } from '../store';
 import { C, mono } from '../theme';
 import { Btn, Label, Sim, s as ui } from '../ui';
@@ -47,6 +48,8 @@ export default function Wallet() {
         ))}
       </View>
 
+      <Btn title="Scan a stall’s QR to pay" onPress={() => nav.push({ name: 'scan' })} />
+      {!!WEB_URL && <Btn title="Sign in · real wallet" kind="line" onPress={() => openWeb('/wallet')} />}
       <Btn title="Get test USDT" kind="line" onPress={() => Alert.alert('Faucet', 'Testnet USDT comes from the Whitechain faucet. This button gets wired when the checkout contract is deployed.')} />
 
       <Label>Payments</Label>

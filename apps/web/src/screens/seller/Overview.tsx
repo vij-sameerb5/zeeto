@@ -54,10 +54,10 @@ export default function Overview() {
 
           <section className="grid grid-cols-2 gap-3">
             {[
+              { to: '/sell/collect', icon: <QrCode />, l: 'Collect', d: 'Customer at the counter' },
               { to: '/sell/products?snap=1', icon: <Camera />, l: 'Snap & Sell', d: 'Photo → listing' },
               { to: '/sell/orders', icon: <ClipboardList />, l: 'Orders', d: `${waiting.length + packing.length} open` },
               { to: '/sell/payments', icon: <Wallet />, l: 'Payments', d: 'USDT received' },
-              { to: '/sell/store', icon: <QrCode />, l: 'Shop QR', d: 'Print for your stall' },
             ].map((x) => (
               <Link key={x.l} to={x.to} className="panel flex flex-col gap-3 p-4 transition hover:border-z/40">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-z-soft text-z">{x.icon}</span>

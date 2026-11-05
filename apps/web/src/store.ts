@@ -3,7 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import {
   ALERTS, FOLLOWING, ME, MY_ORDERS, POINTS, PRODUCTS, VENDORS, VENDOR_ORDERS,
   hex, pickupCode, pointsFor, toUsd,
-  type AiDraft, type Alert, type Order, type Payment, type PointsEntry, type Product, type Refund, type Vendor,
+  type AiDraft, type Alert, type Order, type OrderLine, type Payment, type PointsEntry, type Product, type Refund, type Vendor,
 } from '@zeeto/core';
 
 /** The vendor account used for the vendor-side demo. */
@@ -14,6 +14,23 @@ const storage: StateStorage = {
   setItem: (k, v) => { try { localStorage.setItem(k, v); } catch { /* blocked */ } },
   removeItem: (k) => { try { localStorage.removeItem(k); } catch { /* blocked */ } },
 };
+
+/** A pay-at-the-counter request: the stall rings up an amount, the customer scans and pays. */
+export interface PayRequest {
+  id: string;
+  vendorId: string;
+  inr: number;
+  lines: OrderLine[];
+  /** 'stall' = dynamic QR made by the stall (amount locked); 'customer' = typed after scanning the printed QR. */
+  by: 'stall' | 'customer';
+  status: 'open' | 'paid' | 'cancelled';
+  createdAt: string;
+  expiresAt: string;
+  orderId?: string;
+  payer?: string;
+}
+export const COUNTER_MAX_INR = 20000;
+export const REQUEST_TTL_MS = 5 * 60_000;
 
 export interface ProfileEdit { name?: string; tagline?: string; bio?: string; avatar?: string; cover?: string; photos?: string[]; youtube?: string[]; hours?: string; landmark?: string; waPhone?: string; open?: boolean }
 
@@ -28,6 +45,10 @@ interface S {
   stallOrders: Order[];
   points: PointsEntry[];
   edits: Record<string, ProfileEdit>;
+  requests: Record<string, PayRequest>;
+  /** Admin overrides (demo; the API owns these once Supabase is live). */
+  roles: Record<string, 'customer' | 'merchant' | 'admin'>;
+  stallFlags: Record<string, { suspended?: boolean; verified?: boolean }>;
   /** Vendor finished onboarding in this browser. */
   onboarded: boolean;
   toast: string | null;
@@ -50,6 +71,15 @@ interface S {
   redeem: (label: string, cost: number, vendorId: string) => boolean;
   editProfile: (vendorId: string, e: ProfileEdit) => void;
   goLive: (vendorId: string, e: ProfileEdit) => void;
+  /** Stall or customer opens a counter payment. Returns the request id. */
+  openRequest: (vendorId: string, inr: number, lines: OrderLine[], by: PayRequest['by']) => string;
+  cancelRequest: (id: string) => void;
+  /** Customer starts paying a request: makes the order it settles. */
+  counterOrder: (requestId: string) => Order | null;
+  /** Payment verified: order is done on the spot (goods handed over at the counter). */
+  counterPaid: (requestId: string, orderId: string, p: Payment) => void;
+  setRole: (userId: string, role: 'customer' | 'merchant' | 'admin') => void;
+  setStallFlag: (vendorId: string, f: { suspended?: boolean; verified?: boolean }) => void;
   say: (msg: string) => void;
   reset: () => void;
 }
@@ -65,6 +95,9 @@ const fresh = () => ({
   stallOrders: VENDOR_ORDERS,
   points: POINTS,
   edits: {} as Record<string, ProfileEdit>,
+  requests: {} as Record<string, PayRequest>,
+  roles: {} as Record<string, 'customer' | 'merchant' | 'admin'>,
+  stallFlags: {} as Record<string, { suspended?: boolean; verified?: boolean }>,
   onboarded: false,
   toast: null as string | null,
 });
@@ -143,6 +176,41 @@ export const useApp = create<S>()(
       },
       editProfile: (id, e) => set({ edits: { ...get().edits, [id]: { ...get().edits[id], ...e } } }),
       goLive: (id, e) => set({ onboarded: true, edits: { ...get().edits, [id]: { ...get().edits[id], ...e, open: true } } }),
+      openRequest: (vendorId, inr, lines, by) => {
+        const amount = Math.round(inr);
+        if (!(amount >= 1 && amount <= COUNTER_MAX_INR)) throw new Error(`Amount must be between ₹1 and ₹${COUNTER_MAX_INR.toLocaleString('en-IN')}`);
+        const id = `r${hex(10)}`;
+        const now = Date.now();
+        const req: PayRequest = { id, vendorId, inr: amount, lines, by, status: 'open', createdAt: new Date(now).toISOString(), expiresAt: new Date(now + REQUEST_TTL_MS).toISOString() };
+        set({ requests: { ...get().requests, [id]: req } });
+        return id;
+      },
+      cancelRequest: (id) => { const r = get().requests[id]; if (r && r.status === 'open') set({ requests: { ...get().requests, [id]: { ...r, status: 'cancelled' } } }); },
+      counterOrder: (rid) => {
+        const r = get().requests[rid];
+        if (!r || r.status !== 'open' || Date.parse(r.expiresAt) < Date.now()) return null;
+        const lines = r.lines.length ? r.lines : [{ productId: 'counter', name: 'Counter purchase', unit: 'piece' as const, qty: 1, priceInr: r.inr }];
+        const o: Order = { id: `o${1100 + Math.floor(Math.random() * 8000)}`, code: pickupCode(), customer: ME.name, vendorId: r.vendorId, lines, inr: r.inr, usd: toUsd(r.inr), status: 'paying', at: new Date().toISOString(), refunds: [], points: 0 };
+        set({ myOrders: [o, ...get().myOrders] });
+        return o;
+      },
+      counterPaid: (rid, orderId, payment) => {
+        const r = get().requests[rid];
+        const o = get().myOrders.find((x) => x.id === orderId);
+        if (!r || !o || r.status !== 'open') return; // single use: a second payment never settles the same request
+        const pts = pointsFor(o.inr);
+        const done: Order = { ...o, status: 'done', payment, points: pts };
+        const v = VENDORS.find((x) => x.id === o.vendorId);
+        set({
+          requests: { ...get().requests, [rid]: { ...r, status: 'paid', orderId, payer: ME.name } },
+          myOrders: patch(get().myOrders, orderId, () => done),
+          stallOrders: [done, ...get().stallOrders],
+          products: get().products.map((p) => { const l = o.lines.find((x) => x.productId === p.id); return l ? { ...p, stock: Math.max(0, p.stock - l.qty) } : p; }),
+          points: [{ id: `pt-${orderId}`, points: pts, label: `Paid at ${v?.name}`, at: new Date().toISOString(), vendorId: o.vendorId }, ...get().points],
+        });
+      },
+      setRole: (id, role) => set({ roles: { ...get().roles, [id]: role } }),
+      setStallFlag: (id, f) => set({ stallFlags: { ...get().stallFlags, [id]: { ...get().stallFlags[id], ...f } } }),
       say: (msg) => { set({ toast: msg }); window.setTimeout(() => get().toast === msg && set({ toast: null }), 2600); },
       reset: () => set(fresh()),
     }),

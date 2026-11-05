@@ -18,7 +18,8 @@ export default function Store() {
   const [err, setErr] = useState('');
   const open = e.open ?? true;
   const [from, to] = v.hours.split('-');
-  const url = `${location.origin}/s/${v.id}`;
+  // Printed QR = pay this stall: customer types the amount at the counter, or taps "order ahead".
+  const url = `${location.origin}/p/${v.id}`;
 
   const pick = async (f: File | undefined, then: (d: string) => void) => {
     if (!f) return;
@@ -99,7 +100,7 @@ export default function Store() {
             <div className="label">Your shop QR</div>
             <div ref={qr} className="rounded-2xl bg-chalk p-4"><QRCodeCanvas value={url} size={200} bgColor="#FAF8F3" fgColor="#0A0A0A" level="M" marginSize={0} /></div>
             <div className="text-lg font-extrabold">{v.name}</div>
-            <p className="text-sm text-mute">Print it and stick it on your stall. Customers scan, follow and order.</p>
+            <p className="text-sm text-mute">Print it and stick it on your stall. Customers scan to pay at the counter, or to order ahead. For an exact bill, use Collect.</p>
             <button onClick={downloadQr} className="btn-z w-full"><Download size={16} /> Download PNG</button>
           </div>
           <div className="panel flex flex-col gap-2 p-5 text-sm">

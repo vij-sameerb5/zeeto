@@ -32,16 +32,18 @@ export default function Products() {
               <div className="flex items-center gap-2 font-semibold">{p.name}{p.byAi && <span className="rounded-full bg-z-soft px-2 py-0.5 text-[10px] font-bold text-z">AI</span>}</div>
               <div className="text-xs text-dim">{p.local ?? `per ${UNITS[p.unit]}`}</div>
             </div>
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
             <label className="flex items-center gap-1 rounded-xl border border-line bg-raised px-3 py-2 text-sm">
-              ₹<input key={p.priceInr} defaultValue={p.priceInr} inputMode="numeric" aria-label={`${p.name} price`} onBlur={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n > 0) setPrice(p.id, clampPrice(n)); else e.target.value = String(p.priceInr); }} className="w-14 bg-transparent font-bold outline-none nums" />
-              <span className="text-dim">/{UNITS[p.unit]}</span>
+              ₹<input key={p.priceInr} defaultValue={p.priceInr} inputMode="numeric" aria-label={`${p.name} price`} onBlur={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n > 0) setPrice(p.id, clampPrice(n)); else e.target.value = String(p.priceInr); }} className="w-12 bg-transparent font-bold outline-none nums" />
+              <span className="whitespace-nowrap text-dim">/{UNITS[p.unit]}</span>
             </label>
             <div className="flex items-center rounded-full border border-line bg-raised">
               <button aria-label="Less stock" onClick={() => setStock(p.id, p.stock - 1)} className="grid h-9 w-9 place-items-center"><Minus size={15} /></button>
               <span className="w-10 text-center text-sm font-bold nums">{p.stock}</span>
               <button aria-label="More stock" onClick={() => setStock(p.id, p.stock + 1)} className="grid h-9 w-9 place-items-center"><Plus size={15} /></button>
             </div>
-            <button onClick={() => setStock(p.id, p.stock > 0 ? 0 : 10)} className={`rounded-full px-3 py-2 text-xs font-bold ${p.stock > 0 ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{p.stock > 0 ? 'In stock' : 'Sold out'}</button>
+            <button onClick={() => setStock(p.id, p.stock > 0 ? 0 : 10)} className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold ${p.stock > 0 ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{p.stock > 0 ? 'In stock' : 'Sold out'}</button>
+            </div>
           </div>
         ))}
       </div>

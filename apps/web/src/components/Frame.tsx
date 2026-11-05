@@ -1,7 +1,8 @@
-import { ClipboardList, Compass, Home, Images, Package, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
+import { ClipboardList, Compass, Home, Images, Package, QrCode, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { MY_STALL, useApp, useBagCount } from '../store';
+import { AccountButton } from './Account';
 import { Mark, Toast } from './kit';
 
 type Item = { to: string; label: string; icon: ReactNode; badge?: number; end?: boolean };
@@ -66,6 +67,7 @@ export function ShopperFrame() {
           <div className="flex flex-col items-center gap-2">
             {bag > 0 && <Link to="/bag" aria-label={`Bag, ${bag} items`} className="grid h-11 w-11 place-items-center rounded-full bg-z text-sm font-bold text-z-ink">{bag}</Link>}
             <Link to="/sell" className="flex w-[68px] flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-dim hover:text-chalk"><Store size={20} />Sell</Link>
+            <AccountButton compact />
           </div>
         }
       />
@@ -82,12 +84,13 @@ export function SellerFrame() {
       <Nav
         items={[
           { to: '/sell', label: 'Overview', icon: <Home size={22} />, end: true },
+          { to: '/sell/collect', label: 'Collect', icon: <QrCode size={22} /> },
           { to: '/sell/orders', label: 'Orders', icon: <ClipboardList size={22} />, badge: waiting },
           { to: '/sell/products', label: 'Products', icon: <Package size={22} /> },
           { to: '/sell/payments', label: 'Payments', icon: <Wallet size={22} /> },
           { to: '/sell/store', label: 'Store', icon: <Store size={22} /> },
         ]}
-        extra={<Link to="/explore" className="flex w-[68px] flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-dim hover:text-chalk"><Compass size={20} />Shop</Link>}
+        extra={<div className="flex flex-col items-center gap-2"><Link to="/explore" className="flex w-[68px] flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-dim hover:text-chalk"><Compass size={20} />Shop</Link><AccountButton compact /></div>}
       />
     </div>
   );

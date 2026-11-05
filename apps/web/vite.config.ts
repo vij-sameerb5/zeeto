@@ -8,7 +8,11 @@ export default defineConfig(({ mode }) => {
   const single = mode === 'single';
   return {
     base: single ? './' : '/',
-    resolve: { alias: { '@zeeto/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)) } },
+    resolve: {
+      alias: { '@zeeto/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)) },
+      // Privy lists these as optional peers; resolve them from this app so the build finds them.
+      dedupe: ['@solana/kit', '@solana-program/system', '@solana-program/token', '@solana-program/memo'],
+    },
     define: { __SINGLE__: JSON.stringify(single) },
     build: single ? { assetsInlineLimit: 100_000_000, chunkSizeWarningLimit: 20_000 } : { chunkSizeWarningLimit: 2_000 },
     plugins: [

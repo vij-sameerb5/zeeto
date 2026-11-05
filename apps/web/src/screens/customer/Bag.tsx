@@ -1,18 +1,13 @@
-import { Check, Loader2, Lock, ShieldCheck, Trash2 } from 'lucide-react';
+import { Loader2, Lock, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FX, RAILS, UNITS, VENDORS, inr, mockPayments, pointsFor, short, toUsd, type PaymentIntent } from '@zeeto/core';
+import { FX, RAILS, UNITS, VENDORS, inr, pointsFor, short, toUsd, type PaymentIntent } from '@zeeto/core';
+import { PaySteps, runPay, type PayStep } from '../../components/PayFlow';
+import { useEnsureAuth } from '../../components/Account';
 import { Empty, Face, Header, Pic, Qty, Sim } from '../../components/kit';
 import { useApp } from '../../store';
 
-/** Each step mirrors the real StreetPay flow in docs/ARCHITECTURE.md §5. Today they run against the mock. */
-const STEPS = [
-  { id: 'intent', label: 'Lock the price', hint: 'Zeeto fixes the USDT amount and an order reference' },
-  { id: 'approve', label: 'Approve USDT', hint: 'Your wallet lets the checkout contract take this exact amount' },
-  { id: 'pay', label: 'Pay the stall', hint: 'USDT goes straight to the stall’s wallet on Whitechain' },
-  { id: 'verify', label: 'Confirm onchain', hint: 'Zeeto reads the receipt before the stall sees your order' },
-] as const;
-type Step = (typeof STEPS)[number]['id'] | 'idle' | 'done' | 'failed';
+type Step = PayStep;
 
 export default function Bag() {
   const nav = useNavigate();
@@ -28,6 +23,7 @@ export default function Bag() {
   const total = lines.reduce((s, l) => s + l.n * l.p!.priceInr, 0);
   const rail = RAILS['streetpay-usdt'];
   const busy = step !== 'idle' && step !== 'failed';
+  const ensure = useEnsureAuth();
 
   if (!v || !lines.length) {
     return (
@@ -39,18 +35,11 @@ export default function Bag() {
   }
 
   const pay = async () => {
+    if (!ensure()) return;
     const order = checkout();
     if (!order) return;
     try {
-      setStep('intent');
-      const it = await mockPayments.intent(order, v.wallet);
-      setIntent(it);
-      setStep('approve');
-      await new Promise((r) => setTimeout(r, 700));
-      setStep('pay');
-      const p = await mockPayments.payStreetPay(order);
-      setStep('verify');
-      await new Promise((r) => setTimeout(r, 800));
+      const p = await runPay(order, v.wallet, setStep, setIntent);
       paid(order.id, p);
       setStep('done');
       nav(`/orders/${order.id}?new=1`, { replace: true });
@@ -58,8 +47,6 @@ export default function Bag() {
       setStep('failed');
     }
   };
-
-  const at = STEPS.findIndex((s) => s.id === step);
 
   return (
     <div className="min-h-[100dvh] pb-40">
@@ -104,25 +91,7 @@ export default function Bag() {
             <div className="font-mono text-[11px] text-dim">{rail.network} · chain {rail.chainId} · to {short(v.wallet)}</div>
           </div>
 
-          {step !== 'idle' && (
-            <ol className="panel flex flex-col gap-3 p-5" aria-live="polite">
-              {STEPS.map((s, i) => {
-                const done = step === 'done' || i < at;
-                const now = i === at;
-                return (
-                  <li key={s.id} className="flex gap-3">
-                    <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${done ? 'bg-good text-bg' : now ? 'bg-z text-z-ink' : 'bg-raised text-dim'}`}>
-                      {done ? <Check size={14} /> : now ? <Loader2 size={14} className="animate-spin" /> : i + 1}
-                    </span>
-                    <div><div className={`text-sm font-semibold ${done || now ? '' : 'text-dim'}`}>{s.label}</div><div className="text-xs text-mute">{s.hint}</div>
-                      {s.id === 'intent' && intent && <div className="mt-1 font-mono text-[10px] text-dim">ref {short(intent.orderRef)} · {(Number(intent.amount) / 1e6).toFixed(2)} USDT · expires 15 min</div>}
-                    </div>
-                  </li>
-                );
-              })}
-              {step === 'failed' && <li className="text-sm text-bad">Payment didn’t go through. Nothing was charged. Try again.</li>}
-            </ol>
-          )}
+          {step !== 'idle' && <PaySteps step={step} intent={intent} />}
 
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 p-4 backdrop-blur-xl pb-safe lg:static lg:border-0 lg:bg-transparent lg:p-0">
             <button onClick={pay} disabled={busy} className="btn-z w-full py-4 text-base shadow-glow">

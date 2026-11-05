@@ -1,10 +1,13 @@
 import { List, Map as MapIcon, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CATEGORIES, GROUPS, ME, VENDORS, km, type Category, type CategoryGroup, type Vendor } from '@zeeto/core';
 import { Icon } from '../../components/kit';
 import { StallPeek, StallRow } from '../../components/StallCard';
 import StreetMap from '../../components/StreetMap';
+
+const MapboxMap = lazy(() => import('../../components/MapboxMap'));
+const MAPBOX = !!import.meta.env.VITE_MAPBOX_TOKEN;
 import { StoryRail } from '../../components/Stories';
 import { useApp, useBagCount } from '../../store';
 
@@ -20,6 +23,7 @@ export default function Explore() {
   const products = useApp((s) => s.products);
   const follows = useApp((s) => s.follows);
   const edits = useApp((s) => s.edits);
+  const flags = useApp((s) => s.stallFlags);
   const bag = useBagCount();
   const bagStall = useApp((s) => s.bag.vendorId);
 
@@ -29,8 +33,8 @@ export default function Explore() {
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!quick || (quick === 'fresh' && v.fresh) || (quick === 'offers' && !!v.offer) || (quick === 'following' && follows.includes(v.id)) || (quick === 'usdt' && v.rails.includes('streetpay-usdt')) || (quick === 'eth' && v.rails.includes('uniswap-usdc'))) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t)));
-    return VENDORS.filter((v) => edits[v.id]?.open !== false).filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
-  }, [group, quick, q, follows, products, edits]);
+    return VENDORS.filter((v) => edits[v.id]?.open !== false && !flags[v.id]?.suspended).filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
+  }, [group, quick, q, follows, products, edits, flags]);
   const hidden = useMemo(() => new Set(VENDORS.filter((v) => !shown.includes(v)).map((v) => v.id)), [shown]);
   const peek = shown.find((v) => v.id === sel);
 
@@ -81,7 +85,11 @@ export default function Explore() {
       </section>
 
       <section className={`relative h-[100dvh] md:block md:flex-1 ${view === 'map' ? 'block' : 'hidden'}`}>
-        <StreetMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />
+        {MAPBOX ? (
+          <Suspense fallback={<StreetMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}>
+            <MapboxMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />
+          </Suspense>
+        ) : <StreetMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}
         <div className="gutter absolute inset-x-0 top-0 flex flex-col gap-2.5 bg-gradient-to-b from-bg via-bg/75 to-transparent pb-8 pt-4 pt-safe md:hidden">
           <div className="flex items-center justify-between">
             <div><div className="label">Kalbadevi · Mumbai</div><div className="text-xl font-extrabold tracking-tight">{shown.length} stalls near you</div></div>

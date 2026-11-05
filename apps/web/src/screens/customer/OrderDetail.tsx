@@ -75,7 +75,7 @@ export default function OrderDetail() {
           )}
         </section>
 
-        <aside className="flex flex-col gap-4 md:sticky md:top-24 md:self-start">
+        <aside className="order-first flex flex-col gap-4 md:order-none md:sticky md:top-24 md:self-start">
           <div className={`panel flex flex-col items-center gap-4 p-6 text-center ${live ? 'border-z/50 shadow-glow' : ''}`}>
             {live ? (
               <>

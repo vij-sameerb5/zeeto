@@ -2,7 +2,9 @@ import type { Rail, RailId } from './types';
 
 /** Testnets only. Sources: docs/spec/INTEGRATIONS.md. Verify before first real tx. */
 export const CHAINS = {
-  whitechain: { name: 'Whitechain Sepolia', id: 1874, explorer: 'https://explorer.testnet.whitechain.io', faucet: 'https://faucet.testnet.whitechain.io' },
+  /** Verified Nov 6: eth_chainId 0x752 on the RPC below; USDT below answers symbol() = "USDT", decimals() = 6.
+   *  Not chain 2625: that is Whitechain's older L1 testnet, which does not have this USDT. */
+  whitechain: { name: 'Whitechain Testnet', id: 1874, rpc: 'https://rpc.testnet.whitechain.io', explorer: 'https://explorer.testnet.whitechain.io', faucet: 'https://faucet.testnet.whitechain.io', currency: 'WBT' },
   unichain: { name: 'Unichain Sepolia', id: 1301, explorer: 'https://sepolia.uniscan.xyz', rpc: 'https://sepolia.unichain.org' },
 } as const;
 

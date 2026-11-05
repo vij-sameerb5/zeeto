@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CATEGORIES, CENTER, short, type Category } from '@zeeto/core';
 import { Mark, Sim } from '../../components/kit';
+import { useSession } from '../../lib/auth';
 import { indianMobile } from '../../lib/upload';
 import { MY_STALL, useApp, useVendor } from '../../store';
 
@@ -14,6 +15,8 @@ export default function Join() {
   const nav = useNavigate();
   const demo = useVendor(MY_STALL)!;
   const goLive = useApp((s) => s.goLive);
+  const session = useSession();
+  const privy = session.mode === 'privy';
   const [step, setStep] = useState(0);
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -31,9 +34,11 @@ export default function Join() {
 
   useEffect(() => {
     if (step !== 3 || wallet) return;
+    // With Privy the embedded wallet already exists after sign-in; the demo fakes the wait.
+    if (privy && session.address) { setWallet(session.address); return; }
     const t = setTimeout(() => setWallet(demo.wallet), 1400);
     return () => clearTimeout(t);
-  }, [step, wallet, demo.wallet]);
+  }, [step, wallet, demo.wallet, privy, session.address]);
 
   const locate = () => {
     setLocating(true);
@@ -51,7 +56,7 @@ export default function Join() {
   };
 
   const can = [
-    otpSent && /^\d{6}$/.test(otp),
+    privy ? session.authed : otpSent && /^\d{6}$/.test(otp),
     name.trim().length >= 2 && tagline.trim().length >= 4,
     !!pos && landmark.trim().length >= 3,
     !!wallet,
@@ -61,7 +66,7 @@ export default function Join() {
     <div className="min-h-[100dvh]">
       <header className="gutter mx-auto flex h-16 max-w-xl items-center justify-between pt-safe">
         {step > 0 && step < 4 ? <button aria-label="Back" onClick={() => setStep(step - 1)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/5"><ArrowLeft size={20} /></button> : <Link to="/" aria-label="Zeeto"><Mark size={34} /></Link>}
-        <Sim label="Demo sign-up" />
+        {privy ? <span className="rounded-full bg-good-soft px-2.5 py-1 font-mono text-[10px] uppercase text-good">Privy</span> : <Sim label="Demo sign-up" />}
       </header>
       <div className="gutter mx-auto flex max-w-xl flex-col gap-6 pb-16 pt-4">
         <ol className="flex gap-1.5" aria-label="Progress">
@@ -70,6 +75,10 @@ export default function Join() {
 
         {step === 0 && (
           <Step icon={<Phone />} title="Sell on Zeeto" sub="Your phone number is your login. No email, no app store, no crypto knowledge needed.">
+            {privy ? (
+              session.authed ? <div className="panel p-4 text-sm">Signed in as <b className="font-mono">{session.label}</b></div>
+                : <button onClick={session.login} className="btn-z">Continue with phone</button>
+            ) : <>
             <input value={phone} onChange={(e) => { setPhone(e.target.value); setOtpSent(false); }} inputMode="tel" autoComplete="tel" placeholder="+91 98xxxxxxxx" className="input h-14 text-lg" />
             {!otpSent ? (
               <button disabled={!num} onClick={() => setOtpSent(true)} className="btn-z">Send code</button>
@@ -79,6 +88,7 @@ export default function Join() {
                 <p className="text-xs text-dim">Demo: any 6 digits work. Real SMS codes come from Privy.</p>
               </>
             )}
+            </>}
           </Step>
         )}
 
@@ -122,7 +132,7 @@ export default function Join() {
             <PartyPopper size={40} className="text-z" />
             <h1 className="mega text-5xl">You’re live.</h1>
             <p className="text-mute">{name || demo.name} is on the Zeeto map. Print this QR for your stall.</p>
-            <div className="rounded-3xl bg-chalk p-4"><QRCodeSVG value={`${location.origin}/s/${MY_STALL}`} size={180} bgColor="#FAF8F3" fgColor="#0A0A0A" /></div>
+            <div className="rounded-3xl bg-chalk p-4"><QRCodeSVG value={`${location.origin}/p/${MY_STALL}`} size={180} bgColor="#FAF8F3" fgColor="#0A0A0A" /></div>
             <p className="text-xs text-dim">Demo: your shop uses the sample stall account so it has orders to show.</p>
             <button onClick={() => nav('/sell')} className="btn-z w-full">Open my dashboard</button>
           </div>

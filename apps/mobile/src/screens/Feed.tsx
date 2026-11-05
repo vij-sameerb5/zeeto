@@ -1,4 +1,4 @@
-import { BadgeCheck, Bookmark, Heart, MapPin, MessageCircle, Send, ShoppingBag, Store } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Heart, MapPin, MessageCircle, ScanLine, Send, ShoppingBag, Store } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Dimensions, FlatList, Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ export default function Feed() {
           <Label>Pickup near</Label>
           <View style={[st.row, { gap: 4, marginTop: 4 }]}><MapPin size={16} color={C.z} /><Text style={st.place}>Kalbadevi, Mumbai</Text></View>
         </View>
+        <Pressable onPress={() => nav.push({ name: 'scan' })} style={[st.iconBtn, { backgroundColor: C.z, borderColor: C.z }]} accessibilityLabel="Scan to pay"><ScanLine size={19} color={C.ink} /></Pressable>
         <Pressable onPress={() => nav.push({ name: 'sell' })} style={st.iconBtn} accessibilityLabel="Seller mode"><Store size={19} color={C.chalk} /></Pressable>
         <Pressable onPress={() => nav.push({ name: 'bag' })} style={st.iconBtn} accessibilityLabel="Bag">
           <ShoppingBag size={19} color={C.chalk} />

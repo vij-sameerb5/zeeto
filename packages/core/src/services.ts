@@ -6,7 +6,7 @@ import { fakeTx, hex, toEth } from './utils';
  * The only door between the UI and the outside world.
  * `mock*` run offline today. Each gets a real twin as its integration lands:
  *   payments.quote/payEth  → Uniswap API on Unichain Sepolia
- *   payments.payStreetPay  → StreetPayCheckout on Whitechain Sepolia
+ *   payments.payStreetPay  → StreetPayCheckout on Whitechain Testnet
  *   ai.snap / ai.voice     → 0G Private Computer
  */
 export interface Payments {
@@ -60,8 +60,8 @@ export const mockPayments: Payments = {
   async balances() {
     await wait(150);
     return [
-      { token: 'USDT', amount: 25, network: 'Whitechain Sepolia' },
-      { token: 'WBT', amount: 0.8, network: 'Whitechain Sepolia' },
+      { token: 'USDT', amount: 25, network: 'Whitechain Testnet' },
+      { token: 'WBT', amount: 0.8, network: 'Whitechain Testnet' },
       { token: 'ETH', amount: 0.0421, network: 'Unichain Sepolia' },
       { token: 'USDC', amount: 12.5, network: 'Unichain Sepolia' },
     ];

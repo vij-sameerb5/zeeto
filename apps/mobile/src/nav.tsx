@@ -7,7 +7,8 @@ export type Route =
   | { name: 'stall'; id: string }
   | { name: 'bag' }
   | { name: 'order'; id: string }
-  | { name: 'sell' };
+  | { name: 'sell' }
+  | { name: 'scan' };
 
 export interface Nav {
   push: (r: Route) => void;

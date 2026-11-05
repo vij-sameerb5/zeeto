@@ -3,6 +3,7 @@ import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-rout
 import { SellerFrame, ShopperFrame } from './components/Frame';
 import Landing from './screens/Landing';
 import Bag from './screens/customer/Bag';
+import { PayRequestPage, PayStall } from './screens/customer/CounterPay';
 import Explore from './screens/customer/Explore';
 import Feed from './screens/customer/Feed';
 import OrderDetail from './screens/customer/OrderDetail';
@@ -10,6 +11,8 @@ import Orders from './screens/customer/Orders';
 import Rewards from './screens/customer/Rewards';
 import Stall from './screens/customer/Stall';
 import Wallet from './screens/customer/Wallet';
+import Collect from './screens/seller/Collect';
+import Admin from './screens/admin/Admin';
 import Join from './screens/seller/Join';
 import Overview from './screens/seller/Overview';
 import Payments from './screens/seller/Payments';
@@ -28,6 +31,9 @@ export default function App() {
         <Route path="/s/:id" element={<Stall />} />
         <Route path="/bag" element={<Bag />} />
         <Route path="/join" element={<Join />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/p/:id" element={<PayStall />} />
+        <Route path="/pay/r/:id" element={<PayRequestPage />} />
         <Route element={<ShopperFrame />}>
           <Route path="/explore" element={<Explore />} />
           <Route path="/feed" element={<Feed />} />
@@ -38,6 +44,7 @@ export default function App() {
         </Route>
         <Route path="/sell" element={<SellerFrame />}>
           <Route index element={<Overview />} />
+          <Route path="collect" element={<Collect />} />
           <Route path="orders" element={<SellOrders />} />
           <Route path="products" element={<Products />} />
           <Route path="payments" element={<Payments />} />
