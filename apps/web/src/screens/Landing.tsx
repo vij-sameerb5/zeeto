@@ -45,7 +45,7 @@ export default function Landing() {
                   Explore the market
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-z text-z-ink transition group-hover:scale-110"><ArrowRight size={18} /></span>
                 </Link>
-                <Link to="/sell" className="frost rounded-full px-5 py-3.5 text-[15px] font-semibold">I sell here</Link>
+                <Link to="/join" className="frost rounded-full px-5 py-3.5 text-[15px] font-semibold">I sell here</Link>
               </div>
               <div className="frost hidden items-center gap-3 rounded-2xl p-3 md:flex">
                 <Face media={ravi.avatar} size={42} ring />
@@ -215,7 +215,7 @@ export default function Landing() {
           <p className="font-mono text-[12px] font-medium tracking-[.2em]">FOR VENDORS · FREE TO JOIN</p>
           <h2 className="mega mt-4 max-w-3xl text-[clamp(48px,8vw,120px)]">Put your stall on the map.</h2>
           <p className="mt-6 max-w-xl text-lg font-medium">Snap today's stock. AI writes the listing and tells your followers in Hindi, Marathi and English. Get paid in stablecoins, with receipts and refunds built in.</p>
-          <Link to="/sell" className="btn mt-10 bg-z-ink text-z">Open my stall <ArrowRight size={18} /></Link>
+          <Link to="/join" className="btn mt-10 bg-z-ink text-z">Open my stall <ArrowRight size={18} /></Link>
         </div>
       </section>
 

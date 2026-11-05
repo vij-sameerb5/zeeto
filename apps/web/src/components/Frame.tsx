@@ -1,4 +1,4 @@
-import { BarChart3, Camera, ClipboardList, Compass, Home, Images, Package, Receipt, Sparkles, Store, UserRound, Wallet } from 'lucide-react';
+import { ClipboardList, Compass, Home, Images, Package, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { MY_STALL, useApp, useBagCount } from '../store';
@@ -74,19 +74,18 @@ export function ShopperFrame() {
 }
 
 export function SellerFrame() {
-  const waiting = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY_STALL && (o.status === 'paid' || o.status === 'ready')).length);
+  const waiting = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY_STALL && o.status === 'paid').length);
   return (
     <div className="min-h-[100dvh] pb-24 md:pb-0 md:pl-[84px]">
       <Outlet />
       <Toast />
       <Nav
         items={[
-          { to: '/sell', label: 'Today', icon: <Home size={22} />, end: true },
+          { to: '/sell', label: 'Overview', icon: <Home size={22} />, end: true },
           { to: '/sell/orders', label: 'Orders', icon: <ClipboardList size={22} />, badge: waiting },
-          { to: '/sell/snap', label: 'Snap', icon: <Camera size={22} /> },
-          { to: '/sell/profile', label: 'Profile', icon: <UserRound size={22} /> },
-          { to: '/sell/money', label: 'Money', icon: <BarChart3 size={22} /> },
-          { to: '/sell/stock', label: 'Stock', icon: <Package size={22} /> },
+          { to: '/sell/products', label: 'Products', icon: <Package size={22} /> },
+          { to: '/sell/payments', label: 'Payments', icon: <Wallet size={22} /> },
+          { to: '/sell/store', label: 'Store', icon: <Store size={22} /> },
         ]}
         extra={<Link to="/explore" className="flex w-[68px] flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-dim hover:text-chalk"><Compass size={20} />Shop</Link>}
       />

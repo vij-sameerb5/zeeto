@@ -1,8 +1,21 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { ShopperFrame } from './components/Frame';
+import { SellerFrame, ShopperFrame } from './components/Frame';
 import Landing from './screens/Landing';
+import Bag from './screens/customer/Bag';
 import Explore from './screens/customer/Explore';
+import Feed from './screens/customer/Feed';
+import OrderDetail from './screens/customer/OrderDetail';
+import Orders from './screens/customer/Orders';
+import Rewards from './screens/customer/Rewards';
+import Stall from './screens/customer/Stall';
+import Wallet from './screens/customer/Wallet';
+import Join from './screens/seller/Join';
+import Overview from './screens/seller/Overview';
+import Payments from './screens/seller/Payments';
+import Products from './screens/seller/Products';
+import SellOrders from './screens/seller/SellOrders';
+import Store from './screens/seller/Store';
 
 /** The single-file share build can't use URL paths, so it routes in memory. */
 const Router = ({ children }: { children: ReactNode }) => (__SINGLE__ ? <MemoryRouter>{children}</MemoryRouter> : <BrowserRouter>{children}</BrowserRouter>);
@@ -12,8 +25,23 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/s/:id" element={<Stall />} />
+        <Route path="/bag" element={<Bag />} />
+        <Route path="/join" element={<Join />} />
         <Route element={<ShopperFrame />}>
           <Route path="/explore" element={<Explore />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="/rewards" element={<Rewards />} />
+          <Route path="/wallet" element={<Wallet />} />
+        </Route>
+        <Route path="/sell" element={<SellerFrame />}>
+          <Route index element={<Overview />} />
+          <Route path="orders" element={<SellOrders />} />
+          <Route path="products" element={<Products />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="store" element={<Store />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -52,7 +52,8 @@ export const Sim = ({ label = 'Simulated' }: { label?: string }) => (
 
 const STATUS: Record<OrderStatus, [string, string]> = {
   paying: ['Paying…', 'bg-z-soft text-z'],
-  paid: ['Paid · verified', 'bg-good-soft text-good'],
+  paid: ['Paid · waiting for stall', 'bg-good-soft text-good'],
+  accepted: ['Accepted · packing', 'bg-z-soft text-z'],
   ready: ['Ready for pickup', 'bg-z-soft text-z'],
   done: ['Picked up', 'bg-white/5 text-mute'],
   refunded: ['Refunded', 'bg-bad-soft text-bad'],

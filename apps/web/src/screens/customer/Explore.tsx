@@ -19,6 +19,7 @@ export default function Explore() {
   const [view, setView] = useState<'map' | 'list'>('map');
   const products = useApp((s) => s.products);
   const follows = useApp((s) => s.follows);
+  const edits = useApp((s) => s.edits);
   const bag = useBagCount();
   const bagStall = useApp((s) => s.bag.vendorId);
 
@@ -28,8 +29,8 @@ export default function Explore() {
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!quick || (quick === 'fresh' && v.fresh) || (quick === 'offers' && !!v.offer) || (quick === 'following' && follows.includes(v.id)) || (quick === 'usdt' && v.rails.includes('streetpay-usdt')) || (quick === 'eth' && v.rails.includes('uniswap-usdc'))) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t)));
-    return VENDORS.filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
-  }, [group, quick, q, follows, products]);
+    return VENDORS.filter((v) => edits[v.id]?.open !== false).filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
+  }, [group, quick, q, follows, products, edits]);
   const hidden = useMemo(() => new Set(VENDORS.filter((v) => !shown.includes(v)).map((v) => v.id)), [shown]);
   const peek = shown.find((v) => v.id === sel);
 

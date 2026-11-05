@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zeeto System Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one dark street-night column; each section is a diagram you can read top to bottom. */
+:root {
+  color-scheme: dark;
+  --bg: #0A0A0A; --panel: #141414; --raised: #1F1F1F;
+  --line: rgba(250,248,243,.10); --line2: rgba(250,248,243,.20);
+  --chalk: #FAF8F3; --mute: #A3A09A; --dim: #6E6B66;
+  --z: #FF7A1A; --zsoft: rgba(255,122,26,.14); --ink: #1A0B00;
+  --good: #3DD68C; --goodsoft: rgba(61,214,140,.13);
+  --warn: #F5B83D; --warnsoft: rgba(245,184,61,.13);
+  --sans: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--chalk); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 80px; display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
+.eyebrow.z { color: var(--z); }
+h2 { font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; letter-spacing: -.03em; margin-top: 6px; }
+.lede { color: var(--mute); max-width: 62ch; margin-top: 8px; }
+section { display: flex; flex-direction: column; gap: 22px; }
+
+/* hero */
+.hero { display: flex; flex-direction: column; gap: 18px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { width: 44px; height: 44px; border-radius: 12px; background: var(--z); display: grid; place-items: center; }
+.word { font-weight: 900; font-size: clamp(64px, 12vw, 132px); letter-spacing: -.07em; line-height: .85; }
+.word i { color: var(--z); font-style: normal; }
+.hero p { font-size: 18px; color: var(--chalk); opacity: .85; max-width: 60ch; }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.built { color: var(--good); background: var(--goodsoft); }
+.mock { color: var(--warn); background: var(--warnsoft); }
+.key { color: var(--mute); border-color: var(--line2); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--mute); font-size: 13px; }
+
+/* journey */
+.journey { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative; min-width: 0; }
+.step .n { font-family: var(--mono); font-size: 12px; color: var(--z); }
+.step b { font-size: 15px; }
+.step span { color: var(--mute); font-size: 13px; }
+.step .tag { margin-top: auto; font-family: var(--mono); font-size: 10.5px; color: var(--chalk); opacity: .7; }
+.step.hot { border-color: rgba(255,122,26,.55); background: linear-gradient(160deg, rgba(255,122,26,.18), var(--panel) 60%); }
+.journey .step:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 18px; color: var(--z); font-weight: 700; z-index: 1; }
+
+/* architecture */
+.arch { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.tier { border: 1px solid var(--line); border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 14px; background: var(--panel); }
+.tier.api { border-color: rgba(255,122,26,.5); background: linear-gradient(180deg, rgba(255,122,26,.10), var(--panel)); }
+.tier-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.tier-h h3 { font-size: 17px; font-weight: 800; }
+.boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.boxes.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 700px) { .boxes.six { grid-template-columns: 1fr; } }
+.box { background: var(--raised); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.box b { font-size: 14px; }
+.box small { color: var(--mute); font-size: 12.5px; line-height: 1.4; }
+.box .chip { align-self: flex-start; }
+.mods { display: flex; flex-wrap: wrap; gap: 6px; }
+.mods span { font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); }
+.down { display: flex; justify-content: center; gap: 40px; color: var(--dim); font-family: var(--mono); font-size: 11px; }
+.down span { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.down span::before { content: ""; width: 2px; height: 18px; background: linear-gradient(var(--z), transparent); }
+
+/* sequence */
+.seq-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 24px; background: var(--panel); }
+.seq { min-width: 760px; display: grid; grid-template-columns: 34px repeat(5, 1fr); }
+.seq .lane-h { padding: 14px 10px; font-weight: 700; font-size: 13px; text-align: center; border-bottom: 1px solid var(--line); background: var(--raised); }
+.seq .lane-h:first-child { background: var(--raised); }
+.seq .row { display: contents; }
+.seq .num { font-family: var(--mono); font-size: 11px; color: var(--z); padding: 12px 0 0 12px; border-bottom: 1px solid var(--line); }
+.seq .cell { border-left: 1px dashed var(--line); border-bottom: 1px solid var(--line); padding: 10px; min-height: 52px; display: flex; align-items: center; }
+.msg { width: 100%; font-size: 12.5px; padding: 8px 10px; border-radius: 12px; background: var(--raised); border: 1px solid var(--line2); }
+.msg.z { background: var(--zsoft); border-color: rgba(255,122,26,.5); }
+.msg.g { background: var(--goodsoft); border-color: rgba(61,214,140,.45); }
+.msg code { font-family: var(--mono); font-size: 11px; color: var(--z); }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+
+/* states */
+.states { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.st { padding: 10px 14px; border-radius: 14px; background: var(--raised); border: 1px solid var(--line2); font-weight: 700; font-size: 14px; }
+.st small { display: block; font-weight: 400; color: var(--mute); font-size: 12px; }
+.st.on { background: var(--z); color: var(--ink); border-color: var(--z); }
+.st.on small { color: var(--ink); opacity: .75; }
+.arrow { color: var(--z); font-weight: 800; }
+.branch { display: flex; align-items: center; gap: 8px; color: var(--mute); font-size: 13px; margin-left: 4px; }
+
+/* two col */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card h3 { font-size: 18px; font-weight: 800; }
+ol.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+ol.flow li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+ol.flow li:first-child { border-top: 0; }
+ol.flow .d { width: 28px; height: 28px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line2); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: var(--z); }
+ol.flow b { display: block; font-size: 14px; }
+ol.flow span { color: var(--mute); font-size: 13px; }
+.bubble { align-self: flex-start; max-width: 88%; padding: 9px 12px; border-radius: 16px 16px 16px 4px; background: var(--raised); font-size: 13.5px; }
+.bubble.me { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: #1E3A2B; }
+.chat { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #0E1411; border: 1px solid var(--line); }
+
+/* status board */
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.col { border-radius: 22px; padding: 18px; border: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 10px; }
+.col h3 { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.col ul { margin: 0; padding-left: 18px; color: var(--chalk); opacity: .9; font-size: 13.5px; display: flex; flex-direction: column; gap: 6px; }
+.col.b { border-color: rgba(61,214,140,.35); }
+.col.m { border-color: rgba(245,184,61,.35); }
+
+/* rules */
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.rule { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 14px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); font-size: 14px; }
+.rule::before { content: "◆"; color: var(--z); font-size: 12px; line-height: 1.6; }
+
+footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
+
+@media (max-width: 900px) {
+  .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .journey .step::after { display: none; }
+  .two, .board, .rules { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .step.hot { animation: glow 3s ease-in-out infinite; }
+  @keyframes glow { 50% { box-shadow: 0 0 0 1px rgba(255,122,26,.4), 0 14px 40px -18px rgba(255,122,26,.7); } }
+}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="brand">
+      <div class="mark"><svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 12h36v8L26 44h24v8H14v-8l24-24H14z" fill="#1A0B00"/></svg></div>
+      <span class="eyebrow">ETHGlobal Mumbai · system map · Nov 5</span>
+    </div>
+    <div class="word">zeeto<i>.</i></div>
+    <p>Every street stall in Kalbadevi on one map. Customers order for pickup and pay in USDT. Stalls run their shop from a photo, a WhatsApp message or the dashboard. This page shows how the pieces connect and what is real tonight.</p>
+    <div class="legend"><span class="chip built">Built</span> works now with demo data <span class="chip mock">Mocked</span> real screens, fake service <span class="chip key">Needs keys</span> waiting on accounts / API keys</div>
+  </header>
+
+  <section>
+    <div><div class="eyebrow z">The one journey</div><h2>One vendor, one customer, one real USDT payment</h2>
+    <p class="lede">This is the demo. Everything else supports it.</p></div>
+    <div class="journey">
+      <div class="step"><span class="n">1</span><b>Stall lists stock</b><span>Photo or “20 kg tamatar, 30 rupaye” → AI draft → vendor confirms</span><span class="tag">0G</span></div>
+      <div class="step"><span class="n">2</span><b>Listing goes public</b><span>Vendor profile + listing written to Arkiv, read back by the app</span><span class="tag">Arkiv</span></div>
+      <div class="step"><span class="n">3</span><b>Customer finds it</b><span>Map, search, stall page, adds to bag</span><span class="tag">Mapbox</span></div>
+      <div class="step hot"><span class="n">4</span><b>Pays in USDT</b><span>Embedded wallet signs approve + pay. No MetaMask.</span><span class="tag">Whitechain · Privy</span></div>
+      <div class="step"><span class="n">5</span><b>API verifies onchain</b><span>Reads the Paid event, then the stall sees the order</span><span class="tag">Whitechain</span></div>
+      <div class="step"><span class="n">6</span><b>Pickup code</b><span>Stall types the customer’s code → done, points earned</span><span class="tag">—</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div><div class="eyebrow z">Architecture</div><h2>Three doors, one backend</h2>
+    <p class="lede">Customers, stalls and the WhatsApp assistant all talk to the same API. The API is the only thing that touches the database, the chain readers and the AI.</p></div>
+    <div class="arch">
+      <div class="tier">
+        <div class="tier-h"><h3>Front doors</h3><span class="eyebrow">apps/web · apps/mobile</span></div>
+        <div class="boxes">
+          <div class="box"><b>Customer web (PWA)</b><small>Explore map, stall, bag + pay, pickup QR, feed, rewards, wallet</small><span class="chip built">Built</span></div>
+          <div class="box"><b>Mobile app (Expo)</b><small>Same customer flow + seller mode on the phone</small><span class="chip built">Built</span></div>
+          <div class="box"><b>Merchant dashboard</b><small>Overview, Orders, Products + Snap &amp; Sell, Payments, Store + QR, onboarding</small><span class="chip built">Built</span></div>
+          <div class="box"><b>WhatsApp assistant</b><small>Stock by message, order alerts, photo listings</small><span class="chip key">Needs keys</span></div>
+        </div>
+      </div>
+      <div class="down"><span>REST + Privy token</span><span>Meta webhook</span></div>
+      <div class="tier api">
+        <div class="tier-h"><h3>Zeeto API · Node + Express + TypeScript</h3><span class="chip key">Next, after keys</span></div>
+        <div class="mods"><span>auth</span><span>vendors</span><span>products</span><span>inventory</span><span>orders</span><span>payments</span><span>rewards</span><span>ai</span><span>whatsapp</span><span>arkiv</span></div>
+        <small style="color:var(--mute)">Today the apps call the same interfaces through mock services in <code style="font-family:var(--mono);color:var(--z)">packages/core</code>, each labelled “Simulated” on screen. Swapping a mock for the real service changes no screen.</small>
+      </div>
+      <div class="down"><span>SQL</span><span>RPC / logs</span><span>SDK</span><span>HTTPS</span></div>
+      <div class="tier">
+        <div class="tier-h"><h3>Data, chain and AI</h3><span class="eyebrow">private vs public</span></div>
+        <div class="boxes six">
+          <div class="box"><b>Supabase Postgres + PostGIS</b><small>Source of truth: people, orders, payments, stock. Private.</small><span class="chip key">Needs keys</span></div>
+          <div class="box"><b>StreetPayCheckout</b><small>USDT checkout on Whitechain Sepolia (1874). Signed intents, one payment per order, capped refunds. 17 tests pass.</small><span class="chip built">Built · not deployed</span></div>
+          <div class="box"><b>Arkiv</b><small>Public copy: vendor profiles, listings, announcements. No personal data.</small><span class="chip key">Needs keys</span></div>
+          <div class="box"><b>0G inference</b><small>Photo → listing, message → stock command. Real request IDs logged.</small><span class="chip mock">Mocked</span></div>
+          <div class="box"><b>Privy</b><small>Phone login + embedded wallet. Holds the keys, never us.</small><span class="chip key">Needs keys</span></div>
+          <div class="box"><b>Mapbox</b><small>Real map tiles. Offline street map is the fallback.</small><span class="chip key">Needs keys</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><div class="eyebrow z">Payment, step by step</div><h2>How a USDT payment becomes a paid order</h2>
+    <p class="lede">The order turns “paid” only when step 7 succeeds. The browser saying “done” never counts.</p></div>
+    <div class="seq-scroll" role="region" aria-label="Payment sequence" tabindex="0">
+      <div class="seq">
+        <div class="lane-h">#</div><div class="lane-h">Customer app</div><div class="lane-h">Zeeto API</div><div class="lane-h">Customer wallet (Privy)</div><div class="lane-h">StreetPayCheckout</div><div class="lane-h">Stall</div>
+        <div class="num">1</div><div class="cell"><div class="msg">Checkout: bag → order</div></div><div class="cell"><div class="msg">Order saved as <code>pending_payment</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">2</div><div class="cell"></div><div class="cell"><div class="msg z">Prices in USDT, makes <code>orderRef</code>, signs intent (EIP-712, 15 min)</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">3</div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="msg">approve(contract, amount) once</div></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">4</div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg z">pay(intent, signature) → checks payer, expiry, signer, not paid before</div></div><div class="cell"></div>
+        <div class="num">5</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg g">USDT moves customer → stall wallet. Event <code>Paid</code></div></div>
+        <div class="num">6</div><div class="cell span2"><div class="msg">App sends tx hash to API</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">7</div><div class="cell"></div><div class="cell span3"><div class="msg z">API reads the receipt: right chain, contract, token, orderRef, stall, amount. Log watcher catches it too if the tab closed.</div></div><div class="cell"></div>
+        <div class="num">8</div><div class="cell"><div class="msg g">Pickup code + QR</div></div><div class="cell"><div class="msg">Order <code>paid</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="msg g">New paid order (app + WhatsApp)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><div class="eyebrow z">Order states</div><h2>From paid to picked up</h2></div>
+    <div class="states">
+      <div class="st">Paying<small>wallet signing</small></div><span class="arrow">→</span>
+      <div class="st on">Paid<small>verified onchain</small></div><span class="arrow">→</span>
+      <div class="st">Accepted<small>stall packing</small></div><span class="arrow">→</span>
+      <div class="st">Ready<small>customer notified</small></div><span class="arrow">→</span>
+      <div class="st">Picked up<small>code matched, points</small></div>
+    </div>
+    <div class="branch">Paid → <b style="color:var(--chalk)">Rejected</b> by stall → <b style="color:var(--chalk)">Refunded</b> in USDT from the stall’s wallet, with a reason the customer sees. Partial refunds stay possible after pickup, never above what was paid.</div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <div class="eyebrow z">Vendor onboarding · /join</div>
+      <h3>Live in five steps, no crypto words until step four</h3>
+      <ol class="flow">
+        <li><span class="d">1</span><div><b>Phone + OTP</b><span>Phone number is the login (Privy SMS).</span></div></li>
+        <li><span class="d">2</span><div><b>Shop</b><span>Name, one line, category.</span></div></li>
+        <li><span class="d">3</span><div><b>Location + hours</b><span>“Use my location” at the stall, landmark, opening times.</span></div></li>
+        <li><span class="d">4</span><div><b>Wallet</b><span>Embedded wallet made automatically. Only the stall can move money out.</span></div></li>
+        <li><span class="d">5</span><div><b>Live</b><span>On the map, shop QR to print, dashboard opens.</span></div></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="eyebrow z">WhatsApp assistant · next</div>
+      <h3>The stall’s helper, never its wallet</h3>
+      <div class="chat" aria-label="Example WhatsApp chat">
+        <div class="bubble me">20 kg tamatar, 30 rupaye kilo</div>
+        <div class="bubble">Add <b>Tomatoes · 20 kg · ₹30/kg</b>? Reply YES</div>
+        <div class="bubble me">YES</div>
+        <div class="bubble">Done. Tomatoes: 20 kg at ₹30/kg. Your followers got a fresh-stock note.</div>
+        <div class="bubble">🔔 New paid order #1024 · ₹60 · 0.71 USDT on Whitechain</div>
+      </div>
+      <ol class="flow">
+        <li><span class="d">1</span><div><b>Check Meta’s signature</b><span>Drop anything unsigned, ignore repeats.</span></div></li>
+        <li><span class="d">2</span><div><b>Find the stall by number</b><span>Unknown numbers get a sign-up link.</span></div></li>
+        <li><span class="d">3</span><div><b>AI turns it into a command</b><span>Validated before anything changes.</span></div></li>
+        <li><span class="d">4</span><div><b>Vendor confirms, API applies</b><span>Refunds and withdrawals only in the app.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div><div class="eyebrow z">Where things stand · Nov 5, night</div><h2>Built, mocked, waiting</h2></div>
+    <div class="board">
+      <div class="col b"><h3><span class="chip built">Built</span></h3><ul>
+        <li>Web: 13 customer + seller screens, onboarding</li>
+        <li>Mobile: home feed, map, stall, bag, orders, points, wallet, seller mode</li>
+        <li>Shared core: types, 25 stalls, 56 products, service interfaces</li>
+        <li>StreetPayCheckout contract + 17 tests</li>
+        <li>Pickup QR + code check, accept / reject / refund flow</li>
+      </ul></div>
+      <div class="col m"><h3><span class="chip mock">Mocked, clearly labelled</span></h3><ul>
+        <li>Payments (intent, pay, refund, balances)</li>
+        <li>AI drafts (Snap &amp; Sell, typed voice)</li>
+        <li>Login / OTP and wallet creation</li>
+        <li>Weekly sales history</li>
+      </ul></div>
+      <div class="col"><h3><span class="chip key">Waiting on keys / accounts</span></h3><ul>
+        <li>Contract deploy (deployer + signer key, test WBT, test USDT)</li>
+        <li>Supabase project → API + database</li>
+        <li>Privy app id, Mapbox token</li>
+        <li>Arkiv network + key, 0G key</li>
+        <li>Meta WhatsApp test number</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section>
+    <div><div class="eyebrow z">Safety rules</div><h2>What the system will never do</h2></div>
+    <div class="rules">
+      <div class="rule">Mark an order paid because the browser said so. Only the API, after reading the chain.</div>
+      <div class="rule">Hold anyone’s money or keys. USDT goes customer → stall; Privy holds signing keys.</div>
+      <div class="rule">Let AI act alone. It drafts; the vendor confirms; the API validates prices and quantities.</div>
+      <div class="rule">Move money from WhatsApp. Refunds and withdrawals need the app and the stall’s wallet.</div>
+      <div class="rule">Put personal data on Arkiv. Only public shop and listing data goes there.</div>
+      <div class="rule">Show a mock as real. Every simulated value carries a “Simulated” label on screen.</div>
+    </div>
+  </section>
+
+  <footer>Zeeto · built at ETHGlobal Mumbai 2026 · testnets only (Whitechain Sepolia 1874) · demo rate ₹84 = $1</footer>
+</div>
+
+</html>

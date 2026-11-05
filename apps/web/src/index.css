@@ -19,6 +19,7 @@ h1, h2, h3 { text-wrap: balance; }
   .btn-line { @apply btn border border-line-2 bg-white/[.03] hover:bg-white/[.07]; }
   .pill { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-panel px-3.5 py-2 text-[13px] font-medium transition hover:border-line-2; }
   .pill-on { @apply border-z bg-z text-z-ink; }
+  .input { @apply min-h-[48px] w-full rounded-xl border border-line bg-raised px-4 text-[15px] text-chalk outline-none transition placeholder:text-dim focus:border-z; }
   .panel { @apply rounded-[22px] border border-line bg-panel; }
   .frost { @apply border border-white/10 bg-black/40 backdrop-blur-xl; }
   .nums { font-variant-numeric: tabular-nums; }

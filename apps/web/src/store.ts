@@ -15,7 +15,7 @@ const storage: StateStorage = {
   removeItem: (k) => { try { localStorage.removeItem(k); } catch { /* blocked */ } },
 };
 
-export interface ProfileEdit { tagline?: string; bio?: string; avatar?: string; cover?: string; photos?: string[]; youtube?: string[] }
+export interface ProfileEdit { name?: string; tagline?: string; bio?: string; avatar?: string; cover?: string; photos?: string[]; youtube?: string[]; hours?: string; landmark?: string; waPhone?: string; open?: boolean }
 
 interface S {
   follows: string[];
@@ -28,6 +28,8 @@ interface S {
   stallOrders: Order[];
   points: PointsEntry[];
   edits: Record<string, ProfileEdit>;
+  /** Vendor finished onboarding in this browser. */
+  onboarded: boolean;
   toast: string | null;
 
   follow: (vendorId: string) => void;
@@ -36,14 +38,18 @@ interface S {
   setQty: (vendorId: string, productId: string, qty: number) => void;
   checkout: () => Order | null;
   paid: (orderId: string, p: Payment) => void;
+  accept: (orderId: string) => void;
   packed: (orderId: string) => void;
   handedOver: (orderId: string) => void;
   refunded: (orderId: string, r: Refund, full: boolean) => void;
   toggleStock: (productId: string) => void;
   setPrice: (productId: string, inr: number) => void;
-  publish: (vendorId: string, d: AiDraft) => void;
+  publish: (vendorId: string, d: AiDraft, image?: string) => void;
+  addProduct: (p: Omit<Product, 'id'>) => void;
+  setStock: (productId: string, stock: number) => void;
   redeem: (label: string, cost: number, vendorId: string) => boolean;
   editProfile: (vendorId: string, e: ProfileEdit) => void;
+  goLive: (vendorId: string, e: ProfileEdit) => void;
   say: (msg: string) => void;
   reset: () => void;
 }
@@ -59,6 +65,7 @@ const fresh = () => ({
   stallOrders: VENDOR_ORDERS,
   points: POINTS,
   edits: {} as Record<string, ProfileEdit>,
+  onboarded: false,
   toast: null as string | null,
 });
 
@@ -110,6 +117,7 @@ export const useApp = create<S>()(
           points: [{ id: `pt-${orderId}`, points: pts, label: `Order at ${v?.name}`, at: new Date().toISOString(), vendorId: o.vendorId }, ...get().points],
         });
       },
+      accept: (id) => { const f = (o: Order) => ({ ...o, status: 'accepted' as const }); set({ stallOrders: patch(get().stallOrders, id, f), myOrders: patch(get().myOrders, id, f) }); },
       packed: (id) => { const f = (o: Order) => ({ ...o, status: 'ready' as const }); set({ stallOrders: patch(get().stallOrders, id, f), myOrders: patch(get().myOrders, id, f) }); },
       handedOver: (id) => { const f = (o: Order) => ({ ...o, status: 'done' as const }); set({ stallOrders: patch(get().stallOrders, id, f), myOrders: patch(get().myOrders, id, f) }); },
       refunded: (id, r, full) => {
@@ -118,13 +126,15 @@ export const useApp = create<S>()(
       },
       toggleStock: (id) => set({ products: get().products.map((p) => (p.id === id ? { ...p, stock: p.stock > 0 ? 0 : 10 } : p)) }),
       setPrice: (id, n) => set({ products: get().products.map((p) => (p.id === id ? { ...p, priceInr: n } : p)) }),
-      publish: (vendorId, d) => {
+      publish: (vendorId, d, image) => {
         const until = new Date(Date.now() + 24 * 3600_000).toISOString();
         const vendor = VENDORS.find((v) => v.id === vendorId)!;
-        const added: Product[] = d.items.map((it) => ({ id: `p-${hex(6)}`, vendorId, name: it.name, local: it.local, unit: it.unit, priceInr: it.priceInr, stock: it.qty, image: vendor.photos[0], freshUntil: until, byAi: true }));
+        const added: Product[] = d.items.map((it) => ({ id: `p-${hex(6)}`, vendorId, name: it.name, local: it.local, unit: it.unit, priceInr: it.priceInr, stock: it.qty, image: image ?? vendor.photos[0], freshUntil: until, byAi: true }));
         const alert: Alert = { id: `al-${hex(6)}`, vendorId, ...d.alert, productIds: added.map((p) => p.id), at: new Date().toISOString(), aiRequestId: d.run.requestId };
         set({ products: [...added, ...get().products], alerts: [alert, ...get().alerts] });
       },
+      addProduct: (p) => set({ products: [{ ...p, id: `p-${hex(6)}` }, ...get().products] }),
+      setStock: (id, n) => set({ products: get().products.map((p) => (p.id === id ? { ...p, stock: Math.max(0, Math.min(10000, n)) } : p)) }),
       redeem: (label, cost, vendorId) => {
         const bal = get().points.reduce((s, p) => s + p.points, 0);
         if (bal < cost) return false;
@@ -132,10 +142,11 @@ export const useApp = create<S>()(
         return true;
       },
       editProfile: (id, e) => set({ edits: { ...get().edits, [id]: { ...get().edits[id], ...e } } }),
+      goLive: (id, e) => set({ onboarded: true, edits: { ...get().edits, [id]: { ...get().edits[id], ...e, open: true } } }),
       say: (msg) => { set({ toast: msg }); window.setTimeout(() => get().toast === msg && set({ toast: null }), 2600); },
       reset: () => set(fresh()),
     }),
-    { name: 'zeeto-v1', storage: createJSONStorage(() => storage), partialize: (s) => ({ ...s, toast: null }) },
+    { name: 'zeeto-v2', storage: createJSONStorage(() => storage), partialize: (s) => ({ ...s, toast: null }) },
   ),
 );
 
@@ -147,5 +158,5 @@ export function useVendor(id?: string): Vendor | undefined {
   const e = useApp((s) => (id ? s.edits[id] : undefined));
   const v = VENDORS.find((x) => x.id === id);
   if (!v || !e) return v;
-  return { ...v, tagline: e.tagline ?? v.tagline, bio: e.bio ?? v.bio, avatar: e.avatar ?? v.avatar, cover: e.cover ?? v.cover, photos: [...(e.photos ?? []), ...v.photos], youtube: [...(e.youtube ?? []), ...v.youtube] };
+  return { ...v, name: e.name ?? v.name, hours: e.hours ?? v.hours, landmark: e.landmark ?? v.landmark, tagline: e.tagline ?? v.tagline, bio: e.bio ?? v.bio, avatar: e.avatar ?? v.avatar, cover: e.cover ?? v.cover, photos: [...(e.photos ?? []), ...v.photos], youtube: [...(e.youtube ?? []), ...v.youtube] };
 }

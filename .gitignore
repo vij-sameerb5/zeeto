@@ -8,3 +8,9 @@ dist-preview
 .DS_Store
 *.log
 sameers-learning.txt
+
+# Private working notes (kept local)
+AI_USAGE.md
+docs/ARCHITECTURE.md
+docs/BLUEPRINT.md
+docs/JOURNAL.md

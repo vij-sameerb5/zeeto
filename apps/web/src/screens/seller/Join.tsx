@@ -1,0 +1,147 @@
+import { ArrowLeft, Check, KeyRound, Loader2, LocateFixed, MapPin, PartyPopper, Phone, Store as StoreIcon } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CATEGORIES, CENTER, short, type Category } from '@zeeto/core';
+import { Mark, Sim } from '../../components/kit';
+import { indianMobile } from '../../lib/upload';
+import { MY_STALL, useApp, useVendor } from '../../store';
+
+const STEPS = ['Phone', 'Shop', 'Location', 'Wallet', 'Live'] as const;
+
+/** Vendor onboarding: phone → shop → location → wallet → live with a QR. No crypto words until the wallet step. */
+export default function Join() {
+  const nav = useNavigate();
+  const demo = useVendor(MY_STALL)!;
+  const goLive = useApp((s) => s.goLive);
+  const [step, setStep] = useState(0);
+  const [phone, setPhone] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [name, setName] = useState('');
+  const [cat, setCat] = useState<Category>('vegetables');
+  const [tagline, setTagline] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [from, setFrom] = useState('07:00');
+  const [to, setTo] = useState('21:00');
+  const [pos, setPos] = useState<{ lat: number; lng: number; src: 'gps' | 'demo' } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [wallet, setWallet] = useState<string | null>(null);
+  const num = indianMobile(phone);
+
+  useEffect(() => {
+    if (step !== 3 || wallet) return;
+    const t = setTimeout(() => setWallet(demo.wallet), 1400);
+    return () => clearTimeout(t);
+  }, [step, wallet, demo.wallet]);
+
+  const locate = () => {
+    setLocating(true);
+    if (!navigator.geolocation) { setPos({ ...CENTER, src: 'demo' }); setLocating(false); return; }
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setPos({ lat: p.coords.latitude, lng: p.coords.longitude, src: 'gps' }); setLocating(false); },
+      () => { setPos({ ...CENTER, src: 'demo' }); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const finish = () => {
+    goLive(MY_STALL, { name: name.trim(), tagline: tagline.trim(), landmark: landmark.trim(), hours: `${from}-${to}`, waPhone: num ?? undefined });
+    setStep(4);
+  };
+
+  const can = [
+    otpSent && /^\d{6}$/.test(otp),
+    name.trim().length >= 2 && tagline.trim().length >= 4,
+    !!pos && landmark.trim().length >= 3,
+    !!wallet,
+  ][step];
+
+  return (
+    <div className="min-h-[100dvh]">
+      <header className="gutter mx-auto flex h-16 max-w-xl items-center justify-between pt-safe">
+        {step > 0 && step < 4 ? <button aria-label="Back" onClick={() => setStep(step - 1)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/5"><ArrowLeft size={20} /></button> : <Link to="/" aria-label="Zeeto"><Mark size={34} /></Link>}
+        <Sim label="Demo sign-up" />
+      </header>
+      <div className="gutter mx-auto flex max-w-xl flex-col gap-6 pb-16 pt-4">
+        <ol className="flex gap-1.5" aria-label="Progress">
+          {STEPS.map((s, i) => <li key={s} className="flex-1"><span className={`block h-1.5 rounded-full ${i <= step ? 'bg-z' : 'bg-raised'}`} /><span className={`mt-1.5 block text-[11px] ${i === step ? 'text-chalk' : 'text-dim'}`}>{s}</span></li>)}
+        </ol>
+
+        {step === 0 && (
+          <Step icon={<Phone />} title="Sell on Zeeto" sub="Your phone number is your login. No email, no app store, no crypto knowledge needed.">
+            <input value={phone} onChange={(e) => { setPhone(e.target.value); setOtpSent(false); }} inputMode="tel" autoComplete="tel" placeholder="+91 98xxxxxxxx" className="input h-14 text-lg" />
+            {!otpSent ? (
+              <button disabled={!num} onClick={() => setOtpSent(true)} className="btn-z">Send code</button>
+            ) : (
+              <>
+                <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit code" aria-label="One-time code" className="input h-14 text-center font-mono text-2xl tracking-[0.4em]" />
+                <p className="text-xs text-dim">Demo: any 6 digits work. Real SMS codes come from Privy.</p>
+              </>
+            )}
+          </Step>
+        )}
+
+        {step === 1 && (
+          <Step icon={<StoreIcon />} title="Your shop" sub="This is what customers see first.">
+            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Shop name, e.g. Ravi's Fresh Sabzi" className="input" />
+            <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={80} placeholder="One line, e.g. Fresh from Nashik every morning" className="input" />
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(CATEGORIES) as Category[]).map((c) => <button key={c} onClick={() => setCat(c)} className={`pill ${cat === c ? 'pill-on' : ''}`}>{CATEGORIES[c].label}</button>)}
+            </div>
+          </Step>
+        )}
+
+        {step === 2 && (
+          <Step icon={<MapPin />} title="Where’s your stall?" sub="Stand at your stall and tap the button. We only use it to put you on the map.">
+            <button onClick={locate} disabled={locating} className="btn-line">{locating ? <Loader2 size={17} className="animate-spin" /> : <LocateFixed size={17} />} Use my location</button>
+            {pos && <div className="rounded-2xl bg-raised p-3 font-mono text-sm">{pos.lat.toFixed(5)}, {pos.lng.toFixed(5)} <span className="text-dim">· {pos.src === 'gps' ? 'from your phone' : 'demo spot in Kalbadevi'}</span></div>}
+            <input value={landmark} onChange={(e) => setLandmark(e.target.value)} maxLength={60} placeholder="Landmark, e.g. Outside Mumbadevi temple gate" className="input" />
+            <div className="flex gap-2">
+              <label className="flex flex-1 flex-col gap-1 text-xs text-mute">Opens<input type="time" value={from} onChange={(e) => setFrom(e.target.value)} className="input" /></label>
+              <label className="flex flex-1 flex-col gap-1 text-xs text-mute">Closes<input type="time" value={to} onChange={(e) => setTo(e.target.value)} className="input" /></label>
+            </div>
+          </Step>
+        )}
+
+        {step === 3 && (
+          <Step icon={<KeyRound />} title="Your payment wallet" sub="Zeeto makes a wallet tied to your phone number. Customers’ USDT lands here directly. No seed phrase, nothing to install.">
+            <div className="panel flex items-center gap-3 p-4">
+              {wallet ? <Check className="text-good" /> : <Loader2 className="animate-spin text-z" />}
+              <div className="flex-1"><div className="font-semibold">{wallet ? 'Wallet ready' : 'Creating your wallet…'}</div><div className="font-mono text-sm text-mute">{wallet ? short(wallet) : '—'} · Whitechain</div></div>
+            </div>
+            <ul className="flex flex-col gap-2 text-sm text-mute">
+              <li>• Only you can move money out. Zeeto can’t.</li>
+              <li>• Refunds and withdrawals always ask you to confirm in the app.</li>
+            </ul>
+          </Step>
+        )}
+
+        {step === 4 && (
+          <div className="a-up flex flex-col items-center gap-5 text-center">
+            <PartyPopper size={40} className="text-z" />
+            <h1 className="mega text-5xl">You’re live.</h1>
+            <p className="text-mute">{name || demo.name} is on the Zeeto map. Print this QR for your stall.</p>
+            <div className="rounded-3xl bg-chalk p-4"><QRCodeSVG value={`${location.origin}/s/${MY_STALL}`} size={180} bgColor="#FAF8F3" fgColor="#0A0A0A" /></div>
+            <p className="text-xs text-dim">Demo: your shop uses the sample stall account so it has orders to show.</p>
+            <button onClick={() => nav('/sell')} className="btn-z w-full">Open my dashboard</button>
+          </div>
+        )}
+
+        {step < 4 && (
+          <button disabled={!can} onClick={() => (step === 3 ? finish() : setStep(step + 1))} className="btn-z py-4 text-base">
+            {step === 3 ? 'Go live' : 'Continue'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const Step = ({ icon, title, sub, children }: { icon: ReactNode; title: string; sub: string; children: ReactNode }) => (
+  <section className="a-up flex flex-col gap-4">
+    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-z-soft text-z">{icon}</span>
+    <div><h1 className="text-3xl font-extrabold tracking-tight">{title}</h1><p className="mt-1 text-mute">{sub}</p></div>
+    {children}
+  </section>
+);

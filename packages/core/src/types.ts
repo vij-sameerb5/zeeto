@@ -82,7 +82,11 @@ export interface Post {
 
 export interface Story { id: ID; vendorId: ID; media: string; text: string; at: ISODate }
 
-export type OrderStatus = 'paying' | 'paid' | 'ready' | 'done' | 'refunded' | 'part-refunded';
+/**
+ * paying → paid (verified onchain) → accepted → ready → done.
+ * A stall can reject a paid order, which refunds it.
+ */
+export type OrderStatus = 'paying' | 'paid' | 'accepted' | 'ready' | 'done' | 'refunded' | 'part-refunded';
 
 export interface OrderLine { productId: ID; name: string; unit: Unit; qty: number; priceInr: number }
 
@@ -128,6 +132,23 @@ export interface Alert {
 }
 
 export interface PointsEntry { id: ID; points: number; label: string; at: ISODate; vendorId?: ID }
+
+/** What the API hands the customer's wallet before it signs (docs/ARCHITECTURE.md §5). */
+export interface PaymentIntent {
+  orderId: ID;
+  /** keccak256(orderId, vendorId, chainId) in the real API; random in the mock. */
+  orderRef: Hex;
+  contract: Hex | '';
+  token: Hex;
+  merchant: Hex;
+  /** USDT base units (6 decimals) as a string, so no float rounding. */
+  amount: string;
+  chainId: number;
+  expiresAt: ISODate;
+  /** EIP-712 signature by the API's signer over (orderRef, payer, merchant, amount, expiresAt). See contracts/README.md. */
+  signature?: Hex;
+  simulated: boolean;
+}
 
 export interface Quote {
   id: string;

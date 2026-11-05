@@ -1,5 +1,5 @@
-import { RAILS } from './chain';
-import type { AiDraft, Balance, Order, Payment, Quote, Refund } from './types';
+import { ADDRESSES, RAILS } from './chain';
+import type { AiDraft, Balance, Hex, Order, Payment, PaymentIntent, Quote, Refund } from './types';
 import { fakeTx, hex, toEth } from './utils';
 
 /**
@@ -10,6 +10,8 @@ import { fakeTx, hex, toEth } from './utils';
  *   ai.snap / ai.voice     → 0G Private Computer
  */
 export interface Payments {
+  /** Step 1: the API prices the order in USDT and fixes an order reference. */
+  intent(order: Order, merchant: Hex): Promise<PaymentIntent>;
   quote(usdcOut: number): Promise<Quote>;
   payEth(order: Order, q: Quote): Promise<Payment>;
   payStreetPay(order: Order): Promise<Payment>;
@@ -25,6 +27,20 @@ export interface Ai {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const mockPayments: Payments = {
+  async intent(order, merchant) {
+    await wait(350);
+    return {
+      orderId: order.id,
+      orderRef: `0x${hex(64)}`,
+      contract: ADDRESSES.streetPay as Hex | '',
+      token: ADDRESSES.usdtWhitechain as Hex,
+      merchant,
+      amount: String(Math.round(order.usd * 1_000_000)),
+      chainId: RAILS['streetpay-usdt'].chainId,
+      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+      simulated: true,
+    };
+  },
   async quote(usdcOut) {
     await wait(600);
     return { id: `q_${hex(8)}`, ethIn: toEth(usdcOut) * 1.003, usdcOut, impactPct: 0.04, gasUsd: 0.02, route: 'ETH → USDC · v4 · 0.30%', simulated: true };

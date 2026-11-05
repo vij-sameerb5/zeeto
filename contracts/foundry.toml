@@ -1,0 +1,13 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = []
+solc_version = "0.8.24"
+optimizer = true
+optimizer_runs = 10_000
+evm_version = "paris"   # conservative: works on chains without PUSH0/cancun opcodes
+
+[fmt]
+line_length = 120
