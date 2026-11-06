@@ -59,3 +59,39 @@ export function useMyOrders(): Order[] {
   const local = useApp((s) => s.orders);
   return useMemo(() => [...mine, ...local.filter((o) => !mine.some((m) => m.id === o.id))], [mine, local]);
 }
+
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+
+/** Bag for a real stall (the app's own, separate from sample stalls). One stall at a time, like the website. */
+export const useRealBag = create<{ vendorId: string | null; lines: Record<string, number>; set: (vendorId: string, productId: string, qty: number) => void; clear: () => void }>((set, get) => ({
+  vendorId: null,
+  lines: {},
+  set: (vendorId, productId, qty) => {
+    const lines = get().vendorId === vendorId ? { ...get().lines } : {};
+    if (qty > 0) lines[productId] = qty; else delete lines[productId];
+    set({ vendorId: Object.keys(lines).length ? vendorId : null, lines });
+  },
+  clear: () => set({ vendorId: null, lines: {} }),
+}));
+
+export type PayResult = { status: 'paid' | 'cancel' | 'closed'; order: Order };
+
+/**
+ * Make the order in the app (the server prices it), then open Zeeto's secure checkout for the one thing Expo Go can't do:
+ * the wallet's signature. The page returns to the app on its own when it's paid.
+ */
+export async function orderAndPay(body: { vendorId: string; lines?: { productId: string; qty: number }[]; amountInr?: number }): Promise<PayResult> {
+  const r = await api<{ order: Order }>('/api/orders', { action: 'create', ...body });
+  return payInBrowser(r.order);
+}
+
+export async function payInBrowser(order: Order): Promise<PayResult> {
+  const back = Linking.createURL('paid');
+  const res = await WebBrowser.openAuthSessionAsync(`${WEB_URL}/app-pay/${order.id}?back=${encodeURIComponent(back)}`, back);
+  await loadServer();
+  const fresh = useServer.getState().mine.find((o) => o.id === order.id) ?? order;
+  if (res.type !== 'success') return { status: fresh.status === 'paying' ? 'closed' : 'paid', order: fresh };
+  const q = Linking.parse(res.url).queryParams ?? {};
+  return { status: q.status === 'paid' || fresh.status !== 'paying' ? 'paid' : 'cancel', order: fresh };
+}

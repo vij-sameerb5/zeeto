@@ -1,5 +1,6 @@
 import { BadgeCheck, ChevronLeft, Clock, MapPin, Navigation, Star } from 'lucide-react-native';
-import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, ME, VENDORS, distance, inr, km, UNITS } from '@zeeto/core';
 import { useNav } from '../nav';
@@ -8,7 +9,8 @@ import { C } from '../theme';
 import { Btn, Face, Label, Pic, Qty, s as ui } from '../ui';
 import { BagBar } from './Explore';
 import { findVendor, isReal, useRemote } from '../vendors';
-import { openWeb } from '../web';
+import { orderAndPay, useRealBag, type PayResult } from '../server';
+import { useSession } from '../session';
 
 export default function Stall({ id }: { id: string }) {
   const nav = useNav();
@@ -26,7 +28,40 @@ export default function Stall({ id }: { id: string }) {
   const bag = useApp((x) => x.bag);
   const setQty = useApp((x) => x.setQty);
   const closed = useApp((x) => v.id === MY_STALL && !x.stallOpen);
-  const count = useBagCount();
+  const sampleCount = useBagCount();
+  // Real stall: its own bag in the app; the order is made here and only the wallet signature opens Zeeto's checkout.
+  const rb = useRealBag();
+  const me = useSession();
+  const [busy, setBusy] = useState(false);
+  const [counter, setCounter] = useState(false);
+  const realLines = rb.vendorId === v.id ? rb.lines : {};
+  const realCount = Object.values(realLines).reduce((a, n) => a + n, 0);
+  const realTotal = Object.entries(realLines).reduce((a, [pid, n]) => a + n * (items.find((p) => p.id === pid)?.priceInr ?? 0), 0);
+  const count = real ? realCount : sampleCount;
+
+  const signedIn = async () => {
+    if (me.token) return true;
+    const r = await me.link().catch(() => 'cancel' as const);
+    if (r === 'no-web') Alert.alert('Sign-in isn’t set up', 'Add EXPO_PUBLIC_WEB_URL to apps/mobile/.env and restart Expo.');
+    return r === 'ok' && !!useSession.getState().token;
+  };
+  const done = (r: PayResult) => {
+    if (r.status === 'paid') { if (r.order.lines.some((l) => l.productId !== 'counter')) rb.clear(); nav.reset({ name: 'tabs' }, { name: 'order', id: r.order.id }); }
+    else Alert.alert('Not paid yet', 'Nothing was charged. Your bag is still here.');
+  };
+  const checkout = async (body: Parameters<typeof orderAndPay>[0]) => {
+    if (!(await signedIn())) return;
+    setBusy(true);
+    try { done(await orderAndPay(body)); } catch (e) { Alert.alert('Couldn’t start the payment', (e as Error).message); } finally { setBusy(false); }
+  };
+  const payBag = () => checkout({ vendorId: v.id, lines: Object.entries(realLines).map(([productId, qty]) => ({ productId, qty })) });
+  const changeReal = (productId: string, n: number) => {
+    if (rb.vendorId && rb.vendorId !== v.id && n > 0) {
+      Alert.alert('Start a new bag?', 'Orders are one stall at a time.', [{ text: 'Keep it', style: 'cancel' }, { text: 'New bag', style: 'destructive', onPress: () => rb.set(v.id, productId, n) }]);
+      return;
+    }
+    rb.set(v.id, productId, n);
+  };
   const otherStall = bag.vendorId && bag.vendorId !== v.id ? findVendor(bag.vendorId) : null;
 
   const change = (productId: string, n: number) => {
@@ -48,7 +83,7 @@ export default function Stall({ id }: { id: string }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: count ? 100 : 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: real || count ? 110 : 40 }}>
         <View>
           <Pic media={v.cover} style={{ width: '100%', height: 230 }} />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
@@ -107,7 +142,7 @@ export default function Stall({ id }: { id: string }) {
           <Label style={{ marginTop: 24, marginBottom: 12 }}>On sale today</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {items.map((p) => {
-              const n = bag.vendorId === v.id ? bag.lines[p.id] ?? 0 : 0;
+              const n = real ? realLines[p.id] ?? 0 : bag.vendorId === v.id ? bag.lines[p.id] ?? 0 : 0;
               const out = p.stock <= 0 || closed;
               return (
                 <View key={p.id} style={st.item}>
@@ -116,7 +151,7 @@ export default function Stall({ id }: { id: string }) {
                   {p.local ? <Text style={st.local} numberOfLines={1}>{p.local}</Text> : null}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                     <Text style={st.price}>{inr(p.priceInr)}<Text style={st.unit}> /{UNITS[p.unit]}</Text></Text>
-                    {out ? <Text style={st.unit}>{closed ? 'Closed' : 'Sold out'}</Text> : real ? null : <Qty n={n} onChange={(k) => change(p.id, Math.min(k, p.stock))} />}
+                    {out ? <Text style={st.unit}>{closed ? 'Closed' : 'Sold out'}</Text> : <Qty n={n} onChange={(k) => (real ? changeReal : change)(p.id, Math.min(k, p.stock))} />}
                   </View>
                 </View>
               );
@@ -130,11 +165,45 @@ export default function Stall({ id }: { id: string }) {
       </ScrollView>
       {real ? (
         <View style={[st.realBar, { paddingBottom: Math.max(bottom, 14) }]}>
-          <Btn title="Order & pay" onPress={() => openWeb(`/s/${v.id}`)} style={{ flex: 1 }} />
-          <Btn title="Pay at counter" kind="line" onPress={() => openWeb(`/p/${v.id}`)} style={{ flex: 1 }} />
+          {busy ? <View style={{ flex: 1, height: 52, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.z} /></View> : realCount > 0 ? (
+            <>
+              <Btn title={`Pay ${inr(realTotal)} · ${realCount} item${realCount > 1 ? 's' : ''}`} onPress={payBag} style={{ flex: 1.6 }} />
+              <Btn title="Counter" kind="line" onPress={() => setCounter(true)} style={{ flex: 1 }} />
+            </>
+          ) : (
+            <>
+              <View style={{ flex: 1.6, justifyContent: 'center' }}><Text style={{ color: C.mute, fontSize: 13 }}>Tap + to add items, pick up at the stall. No gas fee.</Text></View>
+              <Btn title="Pay at counter" kind="line" onPress={() => setCounter(true)} style={{ flex: 1 }} />
+            </>
+          )}
         </View>
       ) : count > 0 && <BagBar />}
+      <CounterSheet open={counter} name={v.name} onClose={() => setCounter(false)} onPay={(amountInr) => { setCounter(false); void checkout({ vendorId: v.id, amountInr }); }} />
     </View>
+  );
+}
+
+/** At the counter: type the amount the stall tells you, pay in USDT with no gas fee. */
+function CounterSheet({ open, name, onClose, onPay }: { open: boolean; name: string; onClose: () => void; onPay: (inr: number) => void }) {
+  const [amt, setAmt] = useState('');
+  const n = Number(amt);
+  const ok = Number.isInteger(n) && n >= 1 && n <= 20000;
+  return (
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <View style={{ backgroundColor: C.panel, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 36, gap: 14, borderWidth: 1, borderColor: C.line }}>
+          <Text style={{ color: C.chalk, fontSize: 20, fontWeight: '800' }}>Pay {name}</Text>
+          <Text style={{ color: C.mute }}>Type the amount the stall tells you.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: C.line2, borderRadius: 18, paddingHorizontal: 16, height: 64, backgroundColor: C.raised }}>
+            <Text style={{ color: C.mute, fontSize: 28, fontWeight: '800' }}>₹</Text>
+            <TextInput value={amt} onChangeText={(t) => setAmt(t.replace(/\D/g, '').slice(0, 5))} keyboardType="number-pad" autoFocus placeholder="0" placeholderTextColor={C.dim} style={{ flex: 1, color: C.chalk, fontSize: 30, fontWeight: '800' }} />
+          </View>
+          <Btn title={ok ? `Pay ${inr(n)}` : 'Enter an amount'} disabled={!ok} onPress={() => { onPay(n); setAmt(''); }} />
+          <Btn title="Cancel" kind="line" onPress={onClose} />
+          <Text style={{ color: C.dim, fontSize: 12, textAlign: 'center' }}>Paid in USDT on Whitechain. Zeeto covers the gas.</Text>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 

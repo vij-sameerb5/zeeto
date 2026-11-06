@@ -4,7 +4,7 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'rea
 import { RAILS, VENDORS, ago, inr, short, UNITS, type OrderStatus } from '@zeeto/core';
 import { findVendor } from '../vendors';
 import { useApp } from '../store';
-import { orderStep, useMyOrders } from '../server';
+import { orderStep, payInBrowser, useMyOrders } from '../server';
 import { C, mono } from '../theme';
 import { Bar, Btn, Face, Label, Sim, s as ui } from '../ui';
 
@@ -46,6 +46,7 @@ export default function OrderScreen({ id }: { id: string }) {
         <View style={[ui.card, { alignItems: 'center', paddingVertical: 24, gap: 10, borderColor: open ? C.z : C.line }]}>
           {!open && <CheckCircle2 size={34} color={o.status === 'done' ? C.good : C.mute} />}
           <Text style={{ color: st.color, fontWeight: '700' }}>{o.status === 'ready' ? 'Ready · go pick it up' : st.label}</Text>
+          {o.server && o.status === 'paying' && <Btn title={`Finish paying ${inr(o.inr)}`} style={{ alignSelf: 'stretch' }} onPress={() => payInBrowser(o).catch((e) => Alert.alert('Couldn’t open checkout', (e as Error).message))} />}
           {open && <Text style={{ color: C.mute, fontSize: 13 }}>At the stall, say your name and code</Text>}
           {open && <Text style={{ color: C.chalk, fontSize: 18, fontWeight: '700' }}>{o.customer}</Text>}
           <Text style={{ color: open ? C.z : C.mute, fontFamily: mono, fontSize: open ? 46 : 20, fontWeight: '700', letterSpacing: 4 }}>{o.code}</Text>
