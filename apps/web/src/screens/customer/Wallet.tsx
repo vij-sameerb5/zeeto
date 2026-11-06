@@ -64,8 +64,7 @@ export default function Wallet() {
             : <TopUp address={s.address} />)}
           <button onClick={() => setSwap(true)} className="btn-line"><ArrowRightLeft size={16} /> Swap ETH → USDC with Uniswap</button>
           <TapToPaySoon />
-          <a href="https://testnet.yetitrade.fi/" target="_blank" rel="noreferrer" className="btn-line"><ArrowRightLeft size={16} /> Get test USDT (swap WBT on YetiTrade)</a>
-          <a href={CHAINS.whitechain.faucet} target="_blank" rel="noreferrer" className="btn-line"><Droplets size={16} /> Get test WBT (gas) from the faucet</a>
+          <GetTestMoney address={s.authed ? s.address : null} external={!!s.external} />
           <ul className="panel flex flex-col gap-3 p-5 text-sm text-mute">
             <li className="flex gap-2"><KeyRound size={16} className="mt-0.5 shrink-0 text-z" /> {s.external ? 'Your own MetaMask wallet. Zeeto never sees its keys.' : 'Made for you at sign-in (Privy embedded wallet). No seed phrase to lose.'}</li>
             <li className="flex gap-2"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-z" /> Zeeto never holds your keys or your money. Payments go straight from you to the stall.</li>
@@ -198,6 +197,36 @@ function TopUp({ address }: { address: string }) {
           </ol>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Test money in 3 steps: free WBT from the Whitechain faucet → swap WBT for USDT on YetiTrade (Whitechain's testnet DEX)
+ * → back here, USDT shows up and paying stalls is gas-free. The swap needs a wallet that can sign on another site,
+ * i.e. MetaMask; a wallet Zeeto made at phone/email sign-in gets its USDT sent from a MetaMask wallet instead.
+ */
+function GetTestMoney({ address, external }: { address: string | null; external: boolean }) {
+  const say = useApp((x) => x.say);
+  const copy = () => address && navigator.clipboard?.writeText(address).then(() => say('Address copied. Paste it on the faucet.'), () => undefined);
+  const Step = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
+    <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-z-soft font-mono text-xs font-bold text-z">{n}</span><div className="min-w-0 flex-1"><div className="font-semibold">{title}</div><div className="mt-1 text-sm text-mute">{children}</div></div></li>
+  );
+  return (
+    <div className="panel flex flex-col gap-4 p-5">
+      <div><div className="font-bold">Get test money</div><div className="text-sm text-mute">Free, testnet only. About 2 minutes.</div></div>
+      <ol className="flex flex-col gap-4">
+        <Step n={1} title="Get free WBT">
+          {address && <button onClick={copy} className="mb-2 font-mono text-xs text-z underline">Copy my address</button>}
+          <a href={CHAINS.whitechain.faucet} target="_blank" rel="noreferrer" className="btn-line w-full py-2 text-sm"><Droplets size={15} /> Open the Whitechain faucet</a>
+          <span className="mt-1 block text-xs">Paste your address, claim (up to 2 WBT a day).</span>
+        </Step>
+        <Step n={2} title="Swap WBT → USDT">
+          <a href="https://testnet.yetitrade.fi/" target="_blank" rel="noreferrer" className="btn-line w-full py-2 text-sm"><ArrowRightLeft size={15} /> Open YetiTrade</a>
+          <span className="mt-1 block text-xs">{external || !address ? 'Connect MetaMask there, pick WBT → USDT, swap. Keep a little WBT.' : 'YetiTrade needs MetaMask. Swap in MetaMask, then send the USDT to your Zeeto address (step above).'}</span>
+        </Step>
+        <Step n={3} title="Come back and pay">USDT shows above in a few seconds. Paying stalls is gas-free, so you don’t need to keep WBT here.</Step>
+      </ol>
     </div>
   );
 }

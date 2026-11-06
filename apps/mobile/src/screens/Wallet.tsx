@@ -1,6 +1,6 @@
 import { ArrowRightLeft, Copy, Droplets, ExternalLink, LogIn, LogOut, QrCode, Store } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CHAINS, RAILS, VENDORS, ago, mockPayments, short, type Balance, type Quote } from '@zeeto/core';
 import { findVendor } from '../vendors';
@@ -41,7 +41,7 @@ export default function Wallet() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: top + 12, paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}>
+    <ScrollView style={{ backgroundColor: C.bg }} refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={C.z} />} contentContainerStyle={{ paddingTop: top + 12, paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <View>
           <Label>Testnet only · no real money</Label>
@@ -82,7 +82,7 @@ export default function Wallet() {
 
       <Btn title="Scan a stall’s QR to pay" onPress={() => nav.push({ name: 'scan' })} right={<QrCode size={17} color={C.ink} />} />
       <Btn title="Swap ETH → USDC with Uniswap" kind="line" onPress={() => setSwap(true)} right={<ArrowRightLeft size={16} color={C.chalk} />} />
-      <Btn title="Get test WBT from the faucet" kind="line" onPress={() => Linking.openURL(CHAINS.whitechain.faucet)} right={<Droplets size={16} color={C.chalk} />} />
+      <TestMoney address={me.address} />
       {!!WEB_URL && <Btn title={stallId ? 'My stall' : 'Open my own stall'} kind="line" onPress={() => (stallId ? nav.push({ name: 'sell' }) : openWeb('/start?as=merchant'))} right={<Store size={16} color={C.chalk} />} />}
 
       <Label>Payments</Label>
@@ -166,3 +166,26 @@ const Row = ({ l, r }: { l: string; r: string }) => (
     <Text style={{ color: C.chalk, fontSize: 13, fontWeight: '600', flexShrink: 1, textAlign: 'right' }}>{r}</Text>
   </View>
 );
+
+/** Test money: free WBT from the faucet → swap to USDT on YetiTrade (needs MetaMask) → send to this address → pay gas-free. */
+function TestMoney({ address }: { address: string | null }) {
+  const Step = ({ n, title, body, action }: { n: number; title: string; body: string; action?: React.ReactNode }) => (
+    <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: C.zSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: C.z, fontWeight: '800', fontSize: 12 }}>{n}</Text></View>
+      <View style={{ flex: 1, gap: 6 }}><Text style={{ color: C.chalk, fontWeight: '700' }}>{title}</Text><Text style={{ color: C.mute, fontSize: 13, lineHeight: 18 }}>{body}</Text>{action}</View>
+    </View>
+  );
+  return (
+    <View style={[ui.card, { gap: 14 }]}>
+      <View><Text style={{ color: C.chalk, fontWeight: '800', fontSize: 16 }}>Get test money</Text><Text style={{ color: C.mute, fontSize: 12 }}>Free, testnet only. About 2 minutes.</Text></View>
+      <Step n={1} title="Get free WBT" body="Copy your address, open the faucet, paste it and claim (up to 2 WBT a day)." action={
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {!!address && <Btn title="Share address" kind="line" style={{ flex: 1, height: 40 }} onPress={() => Share.share({ message: address })} />}
+          <Btn title="Faucet" kind="line" style={{ flex: 1, height: 40 }} onPress={() => Linking.openURL(CHAINS.whitechain.faucet)} right={<Droplets size={15} color={C.chalk} />} />
+        </View>} />
+      <Step n={2} title="Swap WBT → USDT" body="On YetiTrade (Whitechain’s test exchange) with MetaMask, then send the USDT to your Zeeto address. Or ask a friend with test USDT to send you 5." action={
+        <Btn title="Open YetiTrade" kind="line" style={{ height: 40 }} onPress={() => Linking.openURL('https://testnet.yetitrade.fi/')} right={<ArrowRightLeft size={15} color={C.chalk} />} />} />
+      <Step n={3} title="Come back and pay" body="Pull down here to see your USDT. Paying stalls is gas-free." />
+    </View>
+  );
+}
