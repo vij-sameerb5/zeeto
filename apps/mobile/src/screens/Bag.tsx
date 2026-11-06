@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FX, RAILS, VENDORS, inr, mockPayments, pointsFor, toUsd, UNITS, type Order, type RailId } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { useSession } from '../session';
 import { useNav } from '../nav';
 import { useApp, useBagTotal } from '../store';
@@ -22,7 +23,7 @@ export default function Bag() {
   const [pending, setPending] = useState<Order | null>(null);
   const [err, setErr] = useState('');
   const me = useSession();
-  const v = VENDORS.find((x) => x.id === bag.vendorId);
+  const v = findVendor(bag.vendorId);
   const products = useApp((x) => x.products);
   const lines = Object.entries(bag.lines).map(([id, n]) => ({ p: products.find((x) => x.id === id)!, n })).filter((l) => l.p);
 

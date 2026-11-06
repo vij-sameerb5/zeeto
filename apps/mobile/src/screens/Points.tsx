@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { REWARDS, VENDORS, ago, loyaltyCards } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { useApp } from '../store';
 import { C, mono } from '../theme';
 import { Face, Label, s as ui } from '../ui';
@@ -26,7 +27,7 @@ export default function Points() {
 
       {!cards.length && <Text style={{ color: C.mute, textAlign: 'center', marginTop: 30 }}>Pay at any stall to get its card.</Text>}
       {cards.map((c) => {
-        const v = VENDORS.find((x) => x.id === c.vendorId);
+        const v = findVendor(c.vendorId);
         if (!v) return null;
         const on = open === c.vendorId;
         const pct = c.next ? Math.min(1, c.visits / c.next.at) : 1;

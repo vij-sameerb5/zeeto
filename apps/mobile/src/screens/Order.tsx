@@ -2,6 +2,7 @@ import { BellRing, CheckCircle2, ExternalLink, Navigation, Undo2, WalletCards } 
 import { useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { RAILS, VENDORS, ago, inr, short, UNITS, type OrderStatus } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { useApp } from '../store';
 import { C, mono } from '../theme';
 import { Bar, Btn, Face, Label, Sim, s as ui } from '../ui';
@@ -23,7 +24,7 @@ export default function OrderScreen({ id }: { id: string }) {
   const askCancel = useApp((x) => x.askCancel);
   const [sure, setSure] = useState(false);
   if (!o) return <View style={{ flex: 1, backgroundColor: C.bg }}><Bar title="Order" /></View>;
-  const v = VENDORS.find((x) => x.id === o.vendorId)!;
+  const v = findVendor(o.vendorId)!;
   const st = STATUS[o.status];
   const open = o.status === 'paid' || o.status === 'accepted' || o.status === 'ready';
   const pay = o.payment;

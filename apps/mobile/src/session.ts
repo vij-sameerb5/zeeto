@@ -12,6 +12,9 @@ import { WEB_URL } from './web';
  * so this app can show your real balance but can't sign; payments that need a signature open on the web.
  */
 interface Session {
+  /** Picked on the first screen: shopping or selling. Only decides where the app opens. */
+  startAs: 'customer' | 'merchant' | null;
+  setStartAs: (r: 'customer' | 'merchant' | null) => void;
   address: Hex | null;
   label: string | null;
   link: () => Promise<'ok' | 'cancel' | 'no-web'>;
@@ -21,6 +24,8 @@ interface Session {
 const isAddr = (a: string | null): a is Hex => !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
 
 export const useSession = create<Session>()(persist((set) => ({
+  startAs: null,
+  setStartAs: (startAs) => set({ startAs }),
   address: null,
   label: null,
   link: async () => {
@@ -36,7 +41,7 @@ export const useSession = create<Session>()(persist((set) => ({
     return 'ok';
   },
   unlink: () => set({ address: null, label: null }),
-}), { name: 'zeeto-mobile-session', storage: createJSONStorage(() => AsyncStorage), partialize: (s) => ({ address: s.address, label: s.label }) }));
+}), { name: 'zeeto-mobile-session', storage: createJSONStorage(() => AsyncStorage), partialize: (s) => ({ address: s.address, label: s.label, startAs: s.startAs }) }));
 
 /** Plain JSON-RPC: no wallet library needed just to read balances. */
 async function rpc<T>(method: string, params: unknown[]): Promise<T> {

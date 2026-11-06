@@ -80,4 +80,4 @@ const M: Record<string, ImageSourcePropType> = {
 };
 
 /** Accepts a media key from the demo data or a real photo URI (camera, gallery, web). */
-export const img = (key: string): ImageSourcePropType => (/^(file|https?|content|ph):/.test(key) ? { uri: key } : M[key] ?? M['veg-1']);
+export const img = (key: string): ImageSourcePropType => (/^(file|https?|content|ph|data):/.test(key) ? { uri: key } : M[key] ?? M['veg-1']);

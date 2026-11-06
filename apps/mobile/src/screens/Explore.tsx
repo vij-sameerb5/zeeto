@@ -5,6 +5,7 @@ import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, CENTER, GROUPS, ME, VENDORS, distance, inr, km, type CategoryGroup, type Vendor } from '@zeeto/core';
+import { findVendor, useVendors } from '../vendors';
 import { img } from '../media';
 import { useNav } from '../nav';
 import { useApp, useBagCount, useBagTotal } from '../store';
@@ -22,6 +23,7 @@ export default function Explore() {
   const follows = useApp((x) => x.follows);
   const products = useApp((x) => x.products);
   const bag = useBagCount();
+  const vendors = useVendors();
   // Where "you" are: the phone's real location when allowed, else the demo spot in Kalbadevi.
   const [here, setHere] = useState(ME.home);
   const [where, setWhere] = useState('Kalbadevi · Mumbai');
@@ -44,11 +46,11 @@ export default function Explore() {
 
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return VENDORS.filter((v) =>
+    return vendors.filter((v) =>
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t))),
     ).sort((a, b) => km(here, a.location) - km(here, b.location));
-  }, [group, q, products, here]);
+  }, [group, q, products, here, vendors]);
   const peek = shown.find((v) => v.id === sel);
 
   const header = (
@@ -118,7 +120,7 @@ export default function Explore() {
             <View style={{ gap: 18, marginBottom: 4 }}>
               {header}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
-                {[...VENDORS].filter((v) => v.fresh || v.offer).sort((a, b) => Number(follows.includes(b.id)) - Number(follows.includes(a.id))).map((v) => (
+                {[...vendors].filter((v) => v.fresh || v.offer).sort((a, b) => Number(follows.includes(b.id)) - Number(follows.includes(a.id))).map((v) => (
                   <Pressable key={v.id} onPress={() => nav.push({ name: 'stall', id: v.id })} style={{ alignItems: 'center', width: 70, gap: 6 }}>
                     <Face media={v.avatar} size={64} ring />
                     <Text numberOfLines={1} style={{ color: C.mute, fontSize: 11 }}>{v.name.split(' ')[0]}</Text>
@@ -212,7 +214,7 @@ export function BagBar() {
   const n = useBagCount();
   const total = useBagTotal();
   const vendorId = useApp((x) => x.bag.vendorId);
-  const v = VENDORS.find((x) => x.id === vendorId);
+  const v = findVendor(vendorId);
   return (
     <Pressable onPress={() => nav.push({ name: 'bag' })} style={st.bagBar}>
       <Text style={st.bagT} numberOfLines={1}>{n} item{n > 1 ? 's' : ''} · {v?.name}</Text>

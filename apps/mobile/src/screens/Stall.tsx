@@ -7,13 +7,19 @@ import { MY_STALL, useApp, useBagCount } from '../store';
 import { C } from '../theme';
 import { Btn, Face, Label, Pic, Qty, s as ui } from '../ui';
 import { BagBar } from './Explore';
+import { findVendor, isReal, useRemote } from '../vendors';
+import { openWeb } from '../web';
 
 export default function Stall({ id }: { id: string }) {
   const nav = useNav();
   const top = useSafeAreaInsets().top;
-  const v = VENDORS.find((x) => x.id === id) ?? VENDORS[0];
+  const bottom = useSafeAreaInsets().bottom;
+  const v = findVendor(id) ?? VENDORS[0];
+  const real = isReal(v);
   const all = useApp((x) => x.products);
-  const items = all.filter((p) => p.vendorId === v.id);
+  const remoteItems = useRemote((x) => x.products);
+  // Real stall: live products from the server; ordering and paying happen on the secure checkout page.
+  const items = (real ? remoteItems : all).filter((p) => p.vendorId === v.id);
   const alert = useApp((x) => x.alerts.find((a) => a.vendorId === v.id));
   const following = useApp((x) => x.follows.includes(v.id));
   const follow = useApp((x) => x.follow);
@@ -21,7 +27,7 @@ export default function Stall({ id }: { id: string }) {
   const setQty = useApp((x) => x.setQty);
   const closed = useApp((x) => v.id === MY_STALL && !x.stallOpen);
   const count = useBagCount();
-  const otherStall = bag.vendorId && bag.vendorId !== v.id ? VENDORS.find((x) => x.id === bag.vendorId) : null;
+  const otherStall = bag.vendorId && bag.vendorId !== v.id ? findVendor(bag.vendorId) : null;
 
   const change = (productId: string, n: number) => {
     if (otherStall && n > 0) {
@@ -110,7 +116,7 @@ export default function Stall({ id }: { id: string }) {
                   {p.local ? <Text style={st.local} numberOfLines={1}>{p.local}</Text> : null}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                     <Text style={st.price}>{inr(p.priceInr)}<Text style={st.unit}> /{UNITS[p.unit]}</Text></Text>
-                    {out ? <Text style={st.unit}>{closed ? 'Closed' : 'Sold out'}</Text> : <Qty n={n} onChange={(k) => change(p.id, Math.min(k, p.stock))} />}
+                    {out ? <Text style={st.unit}>{closed ? 'Closed' : 'Sold out'}</Text> : real ? null : <Qty n={n} onChange={(k) => change(p.id, Math.min(k, p.stock))} />}
                   </View>
                 </View>
               );
@@ -122,7 +128,12 @@ export default function Stall({ id }: { id: string }) {
           <Text style={[st.meta, { marginTop: 8 }]}>Speaks {v.languages.join(', ')}</Text>
         </View>
       </ScrollView>
-      {count > 0 && <BagBar />}
+      {real ? (
+        <View style={[st.realBar, { paddingBottom: Math.max(bottom, 14) }]}>
+          <Btn title="Order & pay" onPress={() => openWeb(`/s/${v.id}`)} style={{ flex: 1 }} />
+          <Btn title="Pay at counter" kind="line" onPress={() => openWeb(`/p/${v.id}`)} style={{ flex: 1 }} />
+        </View>
+      ) : count > 0 && <BagBar />}
     </View>
   );
 }
@@ -139,6 +150,7 @@ const Line = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
 );
 
 const st = StyleSheet.create({
+  realBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line },
   stats: { flexDirection: 'row', gap: 22, paddingBottom: 8 },
   name: { color: C.chalk, fontSize: 24, fontWeight: '800', letterSpacing: -0.6, flexShrink: 1 },
   meta: { color: C.mute, fontSize: 13, marginTop: 2 },

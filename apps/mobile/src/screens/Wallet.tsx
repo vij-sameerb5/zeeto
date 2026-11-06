@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CHAINS, RAILS, VENDORS, ago, mockPayments, short, type Balance, type Quote } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { useNav } from '../nav';
 import { readBalances, useSession } from '../session';
 import { WEB_URL, openWeb } from '../web';
@@ -53,7 +54,7 @@ export default function Wallet() {
       <View style={[ui.card, { gap: 12 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ color: C.mute }}>{me.label ?? 'Your wallet'}</Text>
-          {me.address && <Pressable onPress={me.unlink} hitSlop={8} style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}><LogOut size={13} color={C.mute} /><Text style={{ color: C.mute, fontSize: 12 }}>Sign out</Text></Pressable>}
+          {me.address && <Pressable onPress={() => { me.unlink(); me.setStartAs(null); nav.reset({ name: 'welcome' }); }} hitSlop={8} style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}><LogOut size={13} color={C.mute} /><Text style={{ color: C.mute, fontSize: 12 }}>Sign out</Text></Pressable>}
         </View>
         {me.address ? (
           <Pressable onPress={() => Share.share({ message: me.address! })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -74,6 +75,7 @@ export default function Wallet() {
             <Text style={{ color: C.chalk, fontWeight: '700', fontFamily: mono }}>{b.amount.toFixed(b.token === 'ETH' || b.token === 'WBT' ? 4 : 2)}</Text>
           </View>
         ))}
+        {!!me.address && <Text style={{ color: C.dim, fontSize: 12, lineHeight: 17 }}>Have test USDT in MetaMask? On Whitechain Testnet (1874), send it to the address above (tap to share/copy). Paying stalls is gas-free, so no WBT needed.</Text>}
         {!me.address && <Text style={{ color: C.dim, fontSize: 12, lineHeight: 17 }}>Demo balances. Sign in to see your real Whitechain wallet. Made for you at sign-in, no seed phrase.</Text>}
       </View>
 
@@ -85,7 +87,7 @@ export default function Wallet() {
       <Label>Payments</Label>
       {!orders.length && <Text style={{ color: C.mute }}>No payments yet.</Text>}
       {orders.map((o) => {
-        const v = VENDORS.find((x) => x.id === o.vendorId);
+        const v = findVendor(o.vendorId);
         const p = o.payment!;
         return (
           <Pressable key={o.id} onPress={() => nav.push({ name: 'order', id: o.id })} style={[ui.card, { gap: 4 }]}>

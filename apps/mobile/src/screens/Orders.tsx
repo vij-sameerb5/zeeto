@@ -1,6 +1,7 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VENDORS, ago, inr } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { useNav } from '../nav';
 import { useApp } from '../store';
 import { C, mono } from '../theme';
@@ -25,7 +26,7 @@ export default function Orders() {
       }
       ListEmptyComponent={<Text style={{ color: C.mute, paddingVertical: 40, textAlign: 'center' }}>No orders yet.</Text>}
       renderItem={({ item: o }) => {
-        const v = VENDORS.find((x) => x.id === o.vendorId)!;
+        const v = findVendor(o.vendorId)!;
         const st = STATUS[o.status];
         return (
           <Pressable onPress={() => nav.push({ name: 'order', id: o.id })} style={({ pressed }) => [ui.card, { flexDirection: 'row', gap: 12, alignItems: 'center', opacity: pressed ? 0.85 : 1 }]}>

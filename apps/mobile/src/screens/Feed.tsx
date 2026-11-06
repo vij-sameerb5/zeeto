@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Dimensions, FlatList, Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, POSTS, VENDORS, ago, inr, type Category, type Post, type Story } from '@zeeto/core';
+import { findVendor } from '../vendors';
 import { img } from '../media';
 import { useNav } from '../nav';
 import { useApp, useBagCount } from '../store';
@@ -10,7 +11,7 @@ import { C } from '../theme';
 import { Btn, Face, Icon, Label, Pic } from '../ui';
 
 const W = Dimensions.get('window').width;
-const vendor = (id: string) => VENDORS.find((v) => v.id === id)!;
+const vendor = (id: string) => findVendor(id) ?? VENDORS[0];
 
 /** Home: stories and categories on top of an Instagram-style feed from local stalls. */
 export default function Feed() {

@@ -16,6 +16,7 @@ import Stall from './screens/Stall';
 import Wallet from './screens/Wallet';
 import Welcome from './screens/Welcome';
 import { C } from './theme';
+import { loadRemote } from './vendors';
 
 export default function App() {
   const [stack, setStack] = useState<Route[]>([{ name: 'welcome' }]);
@@ -31,6 +32,9 @@ export default function App() {
     search,
     setSearch,
   }), [tab, search]);
+
+  // Real stalls from the Zeeto server, refreshed every minute.
+  useEffect(() => { void loadRemote(); const t = setInterval(loadRemote, 60_000); return () => clearInterval(t); }, []);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
