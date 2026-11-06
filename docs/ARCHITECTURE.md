@@ -83,9 +83,13 @@ See `contracts/README.md`. Key properties: no funds held, no withdraw, stall bou
 
 See `docs/WHATSAPP.md`. Payments start in chat (`pay ravi 120` → Pay button) and finish with one tap on the hosted checkout, where the customer's wallet signs. Stalls run orders by text (`accept / ready / done <code>`, `bill 250`, `open/close`). Meta-signed webhooks only, idempotent per message id, rate-limited pay links.
 
+**Gemini in WhatsApp:** a stall's photo → listing draft → `publish`; free text in any language from stalls or customers is mapped by Gemini (JSON schema) to exactly one existing command, which then runs with its normal checks. The model never moves money or picks a stall outside the live list. Shared Gemini code is in `api/_lib/gemini.ts`.
+
 ## 9. Auth and identity
 
 Privy: SMS + email login, embedded EVM wallet created at login, chain 1874. The server verifies the Privy access token (JWKS, issuer, audience, expiry) and reads the user's wallet, phone and email from Privy's API with the app secret. The wallet used for payouts, payments and refunds always comes from Privy. Admin = listed in `ADMIN_USERS` (server).
+
+**First screen (web `/start`, phone Welcome):** pick *I'm shopping* or *I run a stall*, then sign in or sign up in the same step (a new phone/email makes a new account and wallet). The pick only decides where the app opens (`/explore` vs `/join` or `/sell`); being a merchant is still decided by the server when a stall is created with that login. Test USDT held in MetaMask is moved into the Zeeto wallet once (Wallet → "Add USDT from MetaMask"); payments after that are gas-free.
 
 The phone app (Expo Go) can't run Privy natively: it opens `/app-link` in an in-app browser, the user signs in, and only the public address and a masked label come back (allowed return schemes: `zeeto:`, `exp:`, `exps:`).
 

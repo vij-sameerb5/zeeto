@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['icon.svg'],
-          workbox: { globPatterns: ['**/*.{js,css,html,svg}'] },
+          workbox: { globPatterns: ['**/*.{js,css,html,svg}'], navigateFallbackDenylist: [/^\/api\//, /^\/checkout\.js$/] },
           manifest: {
             name: 'Zeeto',
             short_name: 'Zeeto',

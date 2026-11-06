@@ -11,6 +11,6 @@
     "dev": "npm run dev -w @zeeto/web",
     "build": "npm run build -w @zeeto/web",
     "typecheck": "npm run typecheck -w @zeeto/web",
-    "mobile": "cd apps/mobile && npx expo start"
+    "test:whatsapp": "npx --yes tsx apps/web/api/_test/whatsapp.test.ts"
   }
 }

@@ -1,0 +1,193 @@
+<title>Zeeto Launch Checklist</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column of ordered launch steps (you), then a ledger of what's built (me) with how to check each. */
+:root {
+  --bg: #F7F5F1; --panel: #FFFFFF; --ink: #16130F; --mute: #6B645B; --line: #E4DED5;
+  --z: #E8620A; --z-soft: #FDEBDD; --good: #1E7A46; --good-soft: #E1F2E8; --warn: #9A5B00; --warn-soft: #FBF0DA;
+  --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B0A09; --panel: #151311; --ink: #F5F1EA; --mute: #A39A8E; --line: #2A2622;
+  --z: #FF7A1A; --z-soft: #2A1A0D; --good: #5BD08C; --good-soft: #12261A; --warn: #F2B35C; --warn-soft: #2A1F0E; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0B0A09; --panel: #151311; --ink: #F5F1EA; --mute: #A39A8E; --line: #2A2622;
+  --z: #FF7A1A; --z-soft: #2A1A0D; --good: #5BD08C; --good-soft: #12261A; --warn: #F2B35C; --warn-soft: #2A1F0E; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1, h2 { font-family: var(--display); letter-spacing: -0.02em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(34px, 6vw, 52px); font-weight: 800; line-height: 1.02; }
+h2 { font-size: 26px; font-weight: 800; }
+.eyebrow { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--z); }
+p { margin: 0; } .mute { color: var(--mute); }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+code { background: var(--z-soft); color: var(--ink); padding: 1px 6px; border-radius: 6px; word-break: break-word; }
+header { display: grid; gap: 14px; }
+.meter { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bar { flex: 1 1 220px; height: 8px; border-radius: 8px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--z); transition: width .3s; }
+.count { font: 600 13px var(--mono); font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 600 11px/1 var(--mono); padding: 6px 9px; border-radius: 99px; border: 1px solid var(--line); }
+.chip.block { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+section { display: grid; gap: 14px; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: s; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; counter-increment: s; }
+.step.done { opacity: .6; }
+.step input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--z); cursor: pointer; }
+.step .t { font-weight: 600; font-size: 16px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.step .t::before { content: counter(s, decimal-leading-zero); font: 600 12px var(--mono); color: var(--z); }
+.step .b { grid-column: 2; min-width: 0; display: grid; gap: 8px; color: var(--mute); }
+.check { border-left: 3px solid var(--good); padding: 6px 10px; background: var(--good-soft); border-radius: 0 8px 8px 0; color: var(--ink); font-size: 14px; }
+.check b { color: var(--good); font: 600 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+.tag { font: 600 10px var(--mono); padding: 3px 7px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); text-transform: uppercase; letter-spacing: .08em; }
+pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; color: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; min-width: 180px; }
+.ok { color: var(--good); font: 600 12px var(--mono); white-space: nowrap; }
+.soon { color: var(--warn); font: 600 12px var(--mono); white-space: nowrap; }
+.wallets { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.wallet { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 4px; }
+.wallet b { font-family: var(--display); font-size: 17px; }
+.wallet span { color: var(--mute); font-size: 13.5px; }
+button.reset { justify-self: start; background: none; border: 1px solid var(--line); color: var(--mute); border-radius: 99px; padding: 6px 12px; font: 500 13px var(--body); cursor: pointer; }
+button.reset:hover { color: var(--ink); }
+:focus-visible { outline: 2px solid var(--z); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">ETHGlobal Mumbai · submit by Nov 7, 09:00 IST</span>
+    <h1>Zeeto launch checklist</h1>
+    <p class="mute">Your steps first, in order. Each one says how to check it worked. Below that: what's already built and how you can verify it yourself. Ticks are saved in this browser only.</p>
+    <div class="meter"><div class="bar" aria-hidden="true"><i id="fill"></i></div><span class="count" id="count">0 / 0 done</span></div>
+    <div class="legend"><span class="chip block">Blocks the demo</span><span class="chip">Keys go in Vercel or .env only, never in chat</span></div>
+  </header>
+
+  <section>
+    <h2>Your 4 MetaMask wallets: what each one is for</h2>
+    <div class="wallets">
+      <div class="wallet"><b>Deployer</b><span>Owns ZeetoCheckout (pause, ownership). Not used day to day. Keep its key off servers.</span></div>
+      <div class="wallet"><b>Relayer</b><span>Its private key goes in Vercel as <code>RELAYER_PRIVATE_KEY</code>. Holds only WBT for gas. Pays gas for every customer.</span></div>
+      <div class="wallet"><b>Merchant</b><span>Not needed by the app: a stall is paid to the wallet Zeeto makes when the merchant signs in. Keep it for the faucet.</span></div>
+      <div class="wallet"><b>Customer (100 USDT)</b><span>Send 20–50 USDT from it to your Zeeto wallet once (step 7). After that, paying is one tap, no gas.</span></div>
+    </div>
+    <p class="mute">Why not log in with MetaMask directly? Zeeto's payer flow signs with the wallet made at phone/email sign-in, so the customer never sees gas, chains or pop-ups. MetaMask is just where your test USDT starts.</p>
+  </section>
+
+  <section aria-labelledby="you">
+    <h2 id="you">You do (in order)</h2>
+    <ol class="steps" id="steps">
+      <li class="step" data-id="push"><input type="checkbox" aria-label="Done: push"><div class="t">Push the latest code <span class="tag">blocks</span></div>
+        <div class="b"><p>From the repo root on your Mac. Three commits, author is only you:</p>
+<pre>cd ~/Desktop/zeeto
+git add apps/mobile && git commit -m "feat(mobile): role choice + sign-in on first open, real stalls, MetaMask top-up note"
+git add apps/web/src && git commit -m "feat(web): start screen with role choice and sign-in, MetaMask top-up"
+git add -A && git commit -m "feat(whatsapp): Gemini listings from photos and free-text commands; docs, offline test"
+git push</pre>
+        <p class="check"><b>Check</b>github.com/vij-sameerb5/zeeto shows the commits; <code>git status</code> is clean.</p></div></li>
+
+      <li class="step" data-id="vercel"><input type="checkbox" aria-label="Done: Vercel"><div class="t">Import the repo on Vercel <span class="tag">blocks</span></div>
+        <div class="b"><p>vercel.com → Add New → Project → <code>vij-sameerb5/zeeto</code>. <b>Root Directory: <code>apps/web</code></b>, keep "include files outside root" on, leave build settings as detected (they come from <code>apps/web/vercel.json</code>).</p>
+        <p>Environment variables (type them into Vercel's form):<br>
+        Browser: <code>VITE_PRIVY_APP_ID</code> <code>VITE_MAPBOX_TOKEN</code> <code>VITE_MAPBOX_STYLE</code> <code>VITE_ADMIN_USERS</code><br>
+        Server only: <code>PRIVY_APP_ID</code> <code>PRIVY_APP_SECRET</code> <code>SUPABASE_URL</code> <code>SUPABASE_SECRET_KEY</code> <code>CHECKOUT_ADDRESS</code> <code>RELAYER_PRIVATE_KEY</code> <code>ADMIN_USERS</code> <code>GEMINI_API_KEY</code> <code>WHATSAPP_TOKEN</code> <code>WHATSAPP_PHONE_NUMBER_ID</code> <code>WHATSAPP_APP_SECRET</code> <code>WHATSAPP_VERIFY_TOKEN</code></p>
+        <p><code>CHECKOUT_ADDRESS</code> = <span class="mono">0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f</span>. Your local <code>.env.local</code> is missing the PRIVY / SUPABASE server ones: copy them from the Privy and Supabase dashboards.</p>
+        <p class="check"><b>Check</b>The deployment says Ready and the site opens.</p></div></li>
+
+      <li class="step" data-id="site"><input type="checkbox" aria-label="Done: SITE_URL"><div class="t">Set SITE_URL, redeploy, allow the origin in Privy <span class="tag">blocks</span></div>
+        <div class="b"><p>Add <code>SITE_URL</code> = your production URL (e.g. https://zeeto-xxx.vercel.app) → Deployments → Redeploy. In dashboard.privy.io → your app → Allowed origins: add the same URL.</p>
+        <p class="check"><b>Check</b>On the live site, <code>/start</code> → "Continue with phone or email" opens Privy and an OTP arrives.</p></div></li>
+
+      <li class="step" data-id="health"><input type="checkbox" aria-label="Done: health"><div class="t">Read /api/health <span class="tag">blocks</span></div>
+        <div class="b"><p>Open <code>&lt;your-url&gt;/api/health</code>.</p>
+        <p class="check"><b>Check</b><code>features</code>: auth, db, checkout, relay, ai, whatsapp all <code>true</code>; <code>site</code> is your URL; <code>relayer</code> is your relayer address. Any <code>false</code> = that env var is missing or misspelled.</p></div></li>
+
+      <li class="step" data-id="merchant"><input type="checkbox" aria-label="Done: merchant"><div class="t">Open your first real stall</div>
+        <div class="b"><p>Phone A: site → <code>/start</code> → "I run a stall or shop" → sign in (phone or email) → Join → name, category, photo, WhatsApp number with +91 → Go live.</p>
+        <p class="check"><b>Check</b>The stall shows on <code>/explore</code> from another browser, and Admin → Stalls lists it.</p></div></li>
+
+      <li class="step" data-id="customer"><input type="checkbox" aria-label="Done: customer"><div class="t">Sign in as a customer</div>
+        <div class="b"><p>Phone B (different number or email): <code>/start</code> → "I'm shopping" → sign in. Go to Wallet and copy your address.</p>
+        <p class="check"><b>Check</b>Wallet shows "Live · chain 1874" and your address.</p></div></li>
+
+      <li class="step" data-id="usdt"><input type="checkbox" aria-label="Done: USDT"><div class="t">Move test USDT from MetaMask to that wallet <span class="tag">blocks</span></div>
+        <div class="b"><p>Wallet → "Add USDT from MetaMask" shows a QR. In MetaMask (customer wallet, Whitechain Testnet 1874) send 20–50 USDT to it. No WBT needed.</p>
+        <p class="check"><b>Check</b>Zeeto Wallet shows the USDT balance after a few seconds.</p></div></li>
+
+      <li class="step" data-id="pay"><input type="checkbox" aria-label="Done: pay"><div class="t">First real gas-free payment <span class="tag">blocks</span></div>
+        <div class="b"><p>Phone B: open the stall → add an item → Pay. Or scan the stall's QR → ₹20 → Pay. Phone A: accept → ready → hand over.</p>
+        <p class="check"><b>Check</b>The receipt link opens Whitechain's explorer: the tx was sent by the relayer, calls ZeetoCheckout, and has a <code>Paid</code> event. The customer's WBT balance did not change. Paste the tx link into the README "Deployed" table.</p></div></li>
+
+      <li class="step" data-id="wa"><input type="checkbox" aria-label="Done: WhatsApp"><div class="t">Switch on WhatsApp</div>
+        <div class="b"><p>developers.facebook.com → Business app → WhatsApp → API setup: token, phone number ID; App settings: app secret. Put them in Vercel (step 2) and redeploy. Configuration → Webhook: <code>&lt;url&gt;/api/whatsapp</code>, verify token = your <code>WHATSAPP_VERIFY_TOKEN</code>, subscribe to <b>messages</b>. Add each demo phone as a test recipient; each sends <code>hi</code> once (Meta only allows replies within 24 h of their last message).</p>
+        <p class="check"><b>Check</b>From phone B send <code>pay &lt;stall name&gt; 20</code> → a Pay button. From the stall's WhatsApp send a photo of stock → AI listing → <code>publish</code> → items on the stall page. Try <code>chai kahan milegi?</code>.</p></div></li>
+
+      <li class="step" data-id="mobile"><input type="checkbox" aria-label="Done: mobile"><div class="t">Point the phone app at the site</div>
+        <div class="b"><p>Create <code>apps/mobile/.env</code> with one line: <code>EXPO_PUBLIC_WEB_URL=https://&lt;your-url&gt;</code>. Then <code>cd apps/mobile && npx expo start --tunnel -c</code>.</p>
+        <p class="check"><b>Check</b>The app opens on "How will you use Zeeto?" → pick → sign in → comes back with your wallet address on the Wallet tab; real stalls show on Explore.</p></div></li>
+
+      <li class="step" data-id="verify"><input type="checkbox" aria-label="Done: verify contract"><div class="t">Retry contract verification</div>
+        <div class="b"><p>Blockscout was down earlier. From <code>contracts/</code>:</p>
+<pre>forge verify-contract 0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f src/ZeetoCheckout.sol:ZeetoCheckout \
+  --chain-id 1874 --verifier blockscout --verifier-url https://explorer.testnet.whitechain.io/api/ \
+  --constructor-args 0x000000000000000000000000cedfb56113143d55b2358b8cfbb0deb5ad2f55a7</pre>
+        <p class="check"><b>Check</b>The contract page on the explorer shows a green "Verified" and the source.</p></div></li>
+
+      <li class="step" data-id="video"><input type="checkbox" aria-label="Done: video"><div class="t">Record the demo and submit</div>
+        <div class="b"><p>2–4 minutes: customer and stall side by side → pay → explorer → refund → WhatsApp pay + photo listing → store checkout example. Submit on ETHGlobal with the repo, live URL, contract address, tx link.</p>
+        <p class="check"><b>Check</b>Submission page shows Whitechain · Operate track selected and the video plays.</p></div></li>
+    </ol>
+    <button class="reset" id="reset" type="button">Clear my ticks</button>
+  </section>
+
+  <section aria-labelledby="me">
+    <h2 id="me">Built by me, and how to check it</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>What</th><th>How you can verify</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Gas-free checkout contract</td><td>You ran <code>forge test</code>: 16/16, incl. a fork test on real Whitechain USDT. Deployed at 0xB3D0…f22f.</td><td class="ok">Done</td></tr>
+        <tr><td>Role choice + sign-in on open (web)</td><td>Open <code>/start</code>: pick shopping or selling → sign in → Explore or Join.</td><td class="ok">Done</td></tr>
+        <tr><td>Role choice + sign-in on open (phone)</td><td>First launch shows the two choices, then sign-in, then Home or Sell. Sign out returns to it.</td><td class="ok">Done</td></tr>
+        <tr><td>MetaMask top-up panel</td><td>Wallet → "Add USDT from MetaMask" (QR + steps). Phone Wallet shows the same note.</td><td class="ok">Done</td></tr>
+        <tr><td>Gemini inside WhatsApp</td><td>Run <code>npm run test:whatsapp</code>: 8 checks, no keys needed (photo → listing → publish, Hinglish bill and pay, made-up stall ignored, forged webhook rejected).</td><td class="ok">Done</td></tr>
+        <tr><td>WhatsApp notifications</td><td>After a real payment both phones get messages: paid + code, accepted, ready, refunded (needs step 9).</td><td class="ok">Built · needs keys</td></tr>
+        <tr><td>Relayer limits</td><td>Docs/ARCHITECTURE → Relayer. Orders under ₹10, over the daily cap or during a gas spike fall back to the customer paying gas.</td><td class="ok">Done</td></tr>
+        <tr><td>Merchant API + checkout.js + example store</td><td><code>examples/store/README.md</code>: run it against your live URL with a test key from Developers.</td><td class="ok">Done</td></tr>
+        <tr><td>Vercel monorepo config</td><td><code>apps/web/vercel.json</code> installs from the repo root; <code>/api/*</code> never served by the PWA cache.</td><td class="ok">Done</td></tr>
+        <tr><td>Journal, architecture, setup, AI usage docs</td><td><code>docs/JOURNAL.md</code> (latest entry Nov 6 22:15), <code>docs/WHATSAPP.md</code>, <code>docs/SETUP.md</code> §5, <code>AI_USAGE.md</code>.</td><td class="ok">Updated</td></tr>
+        <tr><td>Vercel login from here</td><td>Vercel's CLI login needs your browser, so the dashboard import (step 2) is the path.</td><td class="soon">Yours</td></tr>
+        <tr><td>Apple Wallet pass, tap to pay</td><td>Shown as "Coming soon" in the app. Needs Apple signing certificates.</td><td class="soon">Roadmap</td></tr>
+        <tr><td>WhatsApp alerts after 24 h of silence</td><td>Needs an approved Meta message template.</td><td class="soon">Roadmap</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const KEY = 'zeeto-launch-ticks';
+  let ticks = {};
+  try { ticks = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { ticks = {}; }
+  const steps = [...document.querySelectorAll('.step')];
+  const render = () => {
+    let n = 0;
+    steps.forEach((li) => { const on = !!ticks[li.dataset.id]; li.querySelector('input').checked = on; li.classList.toggle('done', on); if (on) n++; });
+    document.getElementById('count').textContent = `${n} / ${steps.length} done`;
+    document.getElementById('fill').style.width = `${(n / steps.length) * 100}%`;
+  };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ticks)); } catch {} };
+  steps.forEach((li) => li.querySelector('input').addEventListener('change', (e) => { ticks[li.dataset.id] = e.target.checked; save(); render(); }));
+  document.getElementById('reset').addEventListener('click', () => { ticks = {}; save(); render(); });
+  render();
+})();
+</script>

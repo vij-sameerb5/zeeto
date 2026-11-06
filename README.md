@@ -8,7 +8,7 @@ Built at ETHGlobal Mumbai 2026 · Whitechain track: **Operate · Stablecoin Paym
 | | |
 |---|---|
 | Live app | _add your Vercel URL_ |
-| ZeetoCheckout (Whitechain Sepolia, verified) | _add after deploy:_ `https://explorer.testnet.whitechain.io/address/<CHECKOUT_ADDRESS>` |
+| ZeetoCheckout (Whitechain Sepolia) | [`0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f`](https://explorer.testnet.whitechain.io/address/0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f) · deploy tx [`0xfd15e6f2…`](https://explorer.testnet.whitechain.io/tx/0xfd15e6f29bd27e15a1b7fc7849e8e6de77a54152474596278ad025bf722d6054) · verification pending (explorer verification service was down on Nov 6) |
 | First USDT payment through the main flow | _add after first payment:_ `https://explorer.testnet.whitechain.io/tx/<TX>` |
 | Demo video (2–4 min) | _add link_ |
 

@@ -17,6 +17,8 @@ Honest notes from building Zeeto (gas-free USDT checkout) on Whitechain Sepolia 
 - **Faucet limits.** 2 WBT a day with a GitHub account older than 30 days is fine for one wallet, but a relayer plus a deployer plus test users quickly need more. A hackathon top-up form, or a higher limit for verified builders, would help.
 - **Getting test USDT** means swapping WBT on YetiTrade, which costs WBT we also need for gas. A USDT faucet (even 50 a day) would make demos easier.
 
+- **Contract verification was down.** `forge create --verify` and `forge verify-contract` against `explorer.testnet.whitechain.io/api/` both returned `{"message":"Contract verification is temporarily unavailable."}` on Nov 6 (~17:10 IST). Deploy worked; verification had to wait. A status page or a fallback (Sourcify) would help.
+
 ## What the docs were missing
 
 1. A "gasless payments" guide: EIP-3009 with the exact typehash and domain for the test USDT, plus a minimal relayer example.

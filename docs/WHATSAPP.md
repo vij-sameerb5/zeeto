@@ -10,7 +10,7 @@ WhatsApp is how most street stalls in India already run their business. Zeeto pl
 |---|---|
 | `pay ravi 120` | "Pay ₹120 to Ravi's Fresh Sabzi" with a **Pay ₹120** button. The button opens Zeeto's hosted checkout, they sign in with the same phone number (OTP), and confirm. No gas, no app to install. |
 | `orders` | A button to their orders and pickup codes |
-| anything else | Short help |
+| anything in their own words, any language: `chai kahan milegi?`, `ravi bhaiya ko 60 rupaye bhejo` | **Gemini** reads it and picks one of: find (up to 3 live stalls with links), pay (the same Pay button as above), orders, or help |
 
 After paying they get: "Paid ₹120 ✅ Your pickup code is NT-576", then "accepted", "ready 🎉" and refund messages as the stall moves the order.
 
@@ -22,6 +22,17 @@ After paying they get: "Paid ₹120 ✅ Your pickup code is NT-576", then "accep
 | `accept AB-123` · `ready AB-123` · `done AB-123` | Moves the order (same rules as the app: a cancel request blocks accept) and messages the customer |
 | `bill 250` | A pay link for ₹250 to forward to a customer or show as a QR |
 | `open` / `close` | Opens or closes the stall for new orders |
+| **a photo of today's stock** | **Gemini** drafts the listing (name, local name, unit, price, quantity + a note to followers) and replies with it |
+| `publish` / `cancel` | Puts the drafted items live on the stall, or drops the draft |
+| anything in their own words: `aaj 20 kilo tamatar 40 rupaye`, `250 ka bill bana do`, `NT-576 ready hai` | **Gemini** maps it to one command above (or a stock draft), then the normal checked command runs |
+
+## Gemini inside WhatsApp: what it can and can't do
+
+- It only **chooses** a command; the command then runs with the same checks as if typed (stall must be live, amount ₹1–20,000, pickup code must match an order of *this* stall, a cancel request still blocks accept).
+- For customers it can only pick stalls from the live list we send it; any other id is ignored. It can make a pay link, never a payment: the customer still signs on the hosted page.
+- New stock never goes live until the stall replies `publish`. Drafts expire after 24 h and are never sent to browsers.
+- Each phone gets at most 12 AI answers per 10 minutes; without `GEMINI_API_KEY` everything falls back to the typed commands.
+- Tested offline with a fake Meta + Supabase + Gemini: `npm run test:whatsapp` (forged webhook, photo → draft → publish, Hinglish bill, Hinglish pay, invented stall ignored, typed commands, Meta retry).
 
 ## Why the payment itself isn't "inside" WhatsApp
 
@@ -48,3 +59,5 @@ Next step (post-hackathon): WhatsApp **Flows** to render the confirm screen insi
 7. Test: from your phone, send `pay <your stall name> 20` to the test number.
 
 The temporary token expires after 24 h; for the demo create a System User token in Business Settings.
+
+**Test-number rules (important for the demo):** with Meta's free test number, you can only message numbers added as test recipients (up to 5), and Zeeto can only send free-text replies and alerts within 24 h of that person's last message. So before the demo, each judge/merchant phone sends `hi` to the number once. Order alerts outside that window need an approved message template (post-hackathon).

@@ -39,10 +39,16 @@ Supabase → SQL Editor → paste `supabase/schema.sql` → Run. (If you ran an 
 
 dashboard.privy.io → your app: login methods SMS + email; embedded wallets on; **Allowed origins**: your Vercel URL and `http://localhost:5173`. Copy the App ID and App secret.
 
-## 5. Vercel
+## 5. Vercel (dashboard import; nothing secret leaves your browser)
 
-New project → import the repo → Root Directory `apps/web` (keep "include files outside root" on) → add env vars from `apps/web/.env.example`:
-`VITE_PRIVY_APP_ID, VITE_MAPBOX_TOKEN, VITE_ADMIN_USERS, PRIVY_APP_ID, PRIVY_APP_SECRET, SUPABASE_URL, SUPABASE_SECRET_KEY, CHECKOUT_ADDRESS, RELAYER_PRIVATE_KEY, ADMIN_USERS, SITE_URL` (+ optional `GEMINI_API_KEY, UNISWAP_API_KEY, WHATSAPP_*`). Deploy. Open `/api/health`: `db, auth, checkout, relay` should be `true`.
+1. Push the repo (`git push`). vercel.com → **Add New → Project** → import `vij-sameerb5/zeeto`.
+2. **Root Directory: `apps/web`** (keep "Include files outside the root directory" on). Framework, install and build come from `apps/web/vercel.json`; leave them as detected.
+3. **Environment Variables** (paste values in the Vercel form, never in chat). Browser-safe: `VITE_PRIVY_APP_ID, VITE_MAPBOX_TOKEN, VITE_MAPBOX_STYLE, VITE_ADMIN_USERS, VITE_STREETPAY_ADDRESS`. Server-only: `PRIVY_APP_ID, PRIVY_APP_SECRET, SUPABASE_URL, SUPABASE_SECRET_KEY, CHECKOUT_ADDRESS, RELAYER_PRIVATE_KEY, ADMIN_USERS, GEMINI_API_KEY, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN` (+ optional `UNISWAP_API_KEY`). `SITE_URL` can wait until you know the URL.
+4. **Deploy.** Copy the production URL (e.g. `https://zeeto-xyz.vercel.app`), add `SITE_URL` = that URL, then **Redeploy**.
+5. Privy dashboard → Allowed origins: add that URL.
+6. Open `<url>/api/health`: `db, auth, checkout, relay, ai, whatsapp` should all be `true`.
+
+CLI alternative (on your Mac): `npm i -g vercel@latest && vercel login && cd ~/Desktop/zeeto && vercel link` (set root directory `apps/web` when asked) `&& vercel --prod`.
 
 ## 6. First real payment (for the README link)
 
@@ -52,4 +58,4 @@ New project → import the repo → Root Directory `apps/web` (keep "include fil
 
 ## 7. Phone app
 
-`apps/mobile/.env`: `EXPO_PUBLIC_WEB_URL=https://<your-vercel-url>` → `npm install` → `npx expo start --tunnel`.
+`apps/mobile/.env`: `EXPO_PUBLIC_WEB_URL=https://<your-vercel-url>` → `npm install` → `npx expo start --tunnel -c`. The app opens on the role choice → sign in (opens the web sign-in once, comes back with your wallet address).

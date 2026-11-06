@@ -18,8 +18,11 @@ export interface OrderRow {
 }
 
 /** What the app's Vendor type expects. Wallet and owner come from columns the API controls, never from `data`. */
+/** waDraft is a stall's private WhatsApp listing draft: never sent to browsers. */
+const publicData = ({ waDraft: _draft, ...rest }: Record<string, unknown>) => rest;
+
 export const toVendor = (v: VendorRow) => ({
-  ...v.data,
+  ...publicData(v.data),
   id: v.id,
   wallet: v.wallet,
   ownerId: v.owner_id,

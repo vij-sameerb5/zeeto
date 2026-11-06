@@ -33,6 +33,23 @@ Whitechain RPC + deployer key + test WBT + test USDT · intent signer key · Sup
 2. `apps/api`: Express + Supabase schema + Privy auth + intent signing + receipt verification + log watcher.
 3. Swap mocks for real services one at a time (payments → Arkiv → 0G → WhatsApp), keeping the "Simulated" labels honest.
 
+## Nov 6 · 22:15–23:30 · First screen, Gemini in WhatsApp, launch checklist
+
+Earlier this evening: **ZeetoCheckout deployed** to Whitechain Sepolia at `0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f` (tx `0xfd15e6f2…6054`, owner = deployer wallet). Explorer verification failed only because Blockscout's verifier was down; retry command in docs/SETUP.md.
+
+### Built
+- **Role chooser + sign in/up on open.** Web `/start` and phone Welcome: "I'm shopping" / "I run a stall or shop" → one sign-in step (new phone/email = new account + wallet) → customers land on Explore, merchants on Join (or their dashboard if they already have a stall). "Just look around" stays for judges. Landing buttons and the installed PWA go through it; signing out on the phone returns to it.
+- **MetaMask top-up.** Wallet → "Add USDT from MetaMask": QR + address + 3 steps. Test USDT in a MetaMask wallet is moved once into the Zeeto wallet; paying after that is gas-free.
+- **Gemini inside WhatsApp.** Stall sends a stock photo → Gemini listing draft → `publish` puts it live. Free text in any language from stalls (`250 ka bill bana do`, `aaj 20 kilo tamatar 40`) or customers (`chai kahan milegi?`, `ravi bhaiya ko 60 rupaye bhejo`) is mapped to one existing command, which runs with its normal checks. Per-phone AI limit, drafts private and expiring. Gemini code shared in `api/_lib/gemini.ts`.
+- `npm run test:whatsapp`: offline test of the webhook with fake Meta/Supabase/Gemini.
+- Launch checklist artifact ("you vs me") with how to verify each step.
+
+### Checks
+web tsc + build · api tsc · `test:whatsapp` 8/8 · Playwright: /start merchant → /join, customer → /explore, wallet top-up, 12 routes, no page errors · mobile tsc + Android export.
+
+### Waiting on Sameer
+Push · Vercel import + env + SITE_URL + redeploy · Privy allowed origin · `/api/health` all true · mobile `.env` · WhatsApp webhook + test recipients send `hi` · move 20 USDT from MetaMask customer wallet to the Zeeto wallet · first real payment · retry contract verification · demo video.
+
 ## Nov 6 · 11:55–13:30 · Whitechain-first rebuild (Arkiv out, Operate track in)
 
 **Decision:** drop Arkiv (it wasn't read by anything, so it wouldn't qualify) and go all-in on Whitechain's **Operate · Stablecoin Payments for Business** ($5k), whose rules reject "a pay button that sends a plain transfer" and ask for a drop-in piece a separate app adds in ~20 lines, both views in the demo, and extra credit for refunds/exports.

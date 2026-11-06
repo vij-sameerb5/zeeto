@@ -14,4 +14,4 @@ forge test --match-contract ZeetoCheckoutForkTest --fork-url https://rpc.testnet
 
 Deploy + verify: see [../docs/SETUP.md](../docs/SETUP.md#2-deploy-and-verify-zeetocheckout).
 
-Deployed: _add address_ · Explorer: https://explorer.testnet.whitechain.io
+Deployed on Whitechain Sepolia (1874): [`0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f`](https://explorer.testnet.whitechain.io/address/0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f) · [deploy tx](https://explorer.testnet.whitechain.io/tx/0xfd15e6f29bd27e15a1b7fc7849e8e6de77a54152474596278ad025bf722d6054) · constructor arg: USDT `0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7`
