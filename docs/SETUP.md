@@ -37,7 +37,7 @@ Supabase → SQL Editor → paste `supabase/schema.sql` → Run. (If you ran an 
 
 ## 4. Privy
 
-dashboard.privy.io → your app: login methods SMS + email; embedded wallets on; **Allowed origins**: your Vercel URL and `http://localhost:5173`. Copy the App ID and App secret.
+dashboard.privy.io → your app: login methods SMS + email + **Wallet (external wallets: MetaMask)**; embedded wallets on; **Allowed origins**: your Vercel URL and `http://localhost:5173`. Copy the App ID and App secret.
 
 ## 5. Vercel (dashboard import; nothing secret leaves your browser)
 

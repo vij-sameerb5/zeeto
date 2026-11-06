@@ -78,10 +78,10 @@ button.reset:hover { color: var(--ink); }
     <div class="wallets">
       <div class="wallet"><b>Deployer</b><span>Owns ZeetoCheckout (pause, ownership). Not used day to day. Keep its key off servers.</span></div>
       <div class="wallet"><b>Relayer</b><span>Its private key goes in Vercel as <code>RELAYER_PRIVATE_KEY</code>. Holds only WBT for gas. Pays gas for every customer.</span></div>
-      <div class="wallet"><b>Merchant</b><span>Not needed by the app: a stall is paid to the wallet Zeeto makes when the merchant signs in. Keep it for the faucet.</span></div>
-      <div class="wallet"><b>Customer (100 USDT)</b><span>Send 20–50 USDT from it to your Zeeto wallet once (step 7). After that, paying is one tap, no gas.</span></div>
+      <div class="wallet"><b>Merchant</b><span>Sign in with it via MetaMask, pick "I run a stall", go live. Payments land straight in this wallet.</span></div>
+      <div class="wallet"><b>Customer (100 USDT)</b><span>Sign in with it via MetaMask, pick "I'm shopping". Pay = one MetaMask signature, no gas (the relayer pays).</span></div>
     </div>
-    <p class="mute">Why not log in with MetaMask directly? Zeeto's payer flow signs with the wallet made at phone/email sign-in, so the customer never sees gas, chains or pop-ups. MetaMask is just where your test USDT starts.</p>
+    <p class="mute">Two ways in: phone/email (Zeeto makes a wallet, no pop-ups ever) or MetaMask (you sign in MetaMask, still no gas). Admin is whoever is in <code>ADMIN_USERS</code>: your email and/or a wallet address, checked on the server. Never sign in with the relayer wallet: the server refuses it.</p>
   </section>
 
   <section aria-labelledby="you">
@@ -105,7 +105,7 @@ git push</pre>
         <p class="check"><b>Check</b>The deployment says Ready and the site opens.</p></div></li>
 
       <li class="step" data-id="site"><input type="checkbox" aria-label="Done: SITE_URL"><div class="t">Set SITE_URL, redeploy, allow the origin in Privy <span class="tag">blocks</span></div>
-        <div class="b"><p>Add <code>SITE_URL</code> = your production URL (e.g. https://zeeto-xxx.vercel.app) → Deployments → Redeploy. In dashboard.privy.io → your app → Allowed origins: add the same URL.</p>
+        <div class="b"><p>Add <code>SITE_URL</code> = <code>https://zeeto.vercel.app</code> → Deployments → Redeploy. In dashboard.privy.io → your app: Allowed origins → add the same URL; Login methods → turn on <b>Wallet</b> (external wallets, MetaMask). Optional: add your MetaMask admin address to <code>ADMIN_USERS</code> and <code>VITE_ADMIN_USERS</code>, comma-separated after your email.</p>
         <p class="check"><b>Check</b>On the live site, <code>/start</code> → "Continue with phone or email" opens Privy and an OTP arrives.</p></div></li>
 
       <li class="step" data-id="health"><input type="checkbox" aria-label="Done: health"><div class="t">Read /api/health <span class="tag">blocks</span></div>
@@ -120,8 +120,8 @@ git push</pre>
         <div class="b"><p>Phone B (different number or email): <code>/start</code> → "I'm shopping" → sign in. Go to Wallet and copy your address.</p>
         <p class="check"><b>Check</b>Wallet shows "Live · chain 1874" and your address.</p></div></li>
 
-      <li class="step" data-id="usdt"><input type="checkbox" aria-label="Done: USDT"><div class="t">Move test USDT from MetaMask to that wallet <span class="tag">blocks</span></div>
-        <div class="b"><p>Wallet → "Add USDT from MetaMask" shows a QR. In MetaMask (customer wallet, Whitechain Testnet 1874) send 20–50 USDT to it. No WBT needed.</p>
+      <li class="step" data-id="usdt"><input type="checkbox" aria-label="Done: USDT"><div class="t">Get USDT into the paying wallet <span class="tag">blocks</span></div>
+        <div class="b"><p>Signed in with MetaMask (customer wallet)? Nothing to do: it already holds the USDT. Signed in with phone/email? Wallet → "Add USDT from MetaMask" shows a QR; send 20–50 USDT to it from MetaMask on Whitechain Testnet 1874.</p>
         <p class="check"><b>Check</b>Zeeto Wallet shows the USDT balance after a few seconds.</p></div></li>
 
       <li class="step" data-id="pay"><input type="checkbox" aria-label="Done: pay"><div class="t">First real gas-free payment <span class="tag">blocks</span></div>
@@ -158,6 +158,7 @@ git push</pre>
         <tr><td>Gas-free checkout contract</td><td>You ran <code>forge test</code>: 16/16, incl. a fork test on real Whitechain USDT. Deployed at 0xB3D0…f22f.</td><td class="ok">Done</td></tr>
         <tr><td>Role choice + sign-in on open (web)</td><td>Open <code>/start</code>: pick shopping or selling → sign in → Explore or Join.</td><td class="ok">Done</td></tr>
         <tr><td>Role choice + sign-in on open (phone)</td><td>First launch shows the two choices, then sign-in, then Home or Sell. Sign out returns to it.</td><td class="ok">Done</td></tr>
+        <tr><td>MetaMask sign-in</td><td>On <code>/start</code>, the Privy window shows MetaMask. Pay shows one MetaMask signature; the explorer tx is sent by the relayer, so the wallet's WBT stays the same.</td><td class="ok">Done</td></tr>
         <tr><td>MetaMask top-up panel</td><td>Wallet → "Add USDT from MetaMask" (QR + steps). Phone Wallet shows the same note.</td><td class="ok">Done</td></tr>
         <tr><td>Gemini inside WhatsApp</td><td>Run <code>npm run test:whatsapp</code>: 8 checks, no keys needed (photo → listing → publish, Hinglish bill and pay, made-up stall ignored, forged webhook rejected).</td><td class="ok">Done</td></tr>
         <tr><td>WhatsApp notifications</td><td>After a real payment both phones get messages: paid + code, accepted, ready, refunded (needs step 9).</td><td class="ok">Built · needs keys</td></tr>

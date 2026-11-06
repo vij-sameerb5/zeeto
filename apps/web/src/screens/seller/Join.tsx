@@ -127,10 +127,10 @@ export default function Join() {
         </ol>
 
         {step === 0 && (
-          <Step icon={<Phone />} title="Sell on Zeeto" sub="Your phone number is your login. No email, no app store, no crypto knowledge needed.">
+          <Step icon={<Phone />} title="Sell on Zeeto" sub="Sign in with your phone, email or MetaMask. No app store, no crypto knowledge needed.">
             {privy ? (
               session.authed ? <div className="panel p-4 text-sm">Signed in as <b className="font-mono">{session.label}</b></div>
-                : <button onClick={session.login} className="btn-z">Continue with phone</button>
+                : <button onClick={session.login} className="btn-z">Continue with phone, email or MetaMask</button>
             ) : <>
             <input value={phone} onChange={(e) => { setPhone(e.target.value); setOtpSent(false); }} inputMode="tel" autoComplete="tel" placeholder="+91 98xxxxxxxx" className="input h-14 text-lg" />
             {!otpSent ? (

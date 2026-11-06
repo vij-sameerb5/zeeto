@@ -1,12 +1,13 @@
 import type { VercelRequest } from '@vercel/node';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { privateKeyToAccount } from 'viem/accounts';
 import { db } from './db.js';
 import { env, has } from './env.js';
 import { HttpError, off } from './http.js';
 
 export interface Me {
   id: string;            // did:privy:...
-  address: `0x${string}`; // their Privy embedded wallet
+  address: `0x${string}`; // their Privy embedded wallet, or the MetaMask wallet they signed in with
   label: string;          // masked phone/email
   phone: string | null;
   admin: boolean;
@@ -14,6 +15,13 @@ export interface Me {
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 const cache = new Map<string, { me: Me; t: number }>();
+
+/** The relayer pays gas for everyone, so it must never also be someone's account (it would pay and refund itself). */
+let relayer: string | null | undefined;
+const relayerAddress = () => {
+  if (relayer === undefined) { try { relayer = has.relay ? privateKeyToAccount(env.relayerKey as `0x${string}`).address.toLowerCase() : null; } catch { relayer = null; } }
+  return relayer;
+};
 
 const mask = (s: string) => (s.startsWith('+') ? `${s.slice(0, 5)}•••• ${s.slice(-4)}` : s.replace(/^(.).+(@.+)$/, '$1•••$2'));
 
@@ -51,13 +59,15 @@ export async function requireUser(req: VercelRequest): Promise<Me> {
   const email = accounts.find((a) => a.type === 'email');
   const address = wallet?.address as `0x${string}` | undefined;
   if (!address) throw new HttpError(409, 'Your wallet is still being created. Try again in a moment.');
+  if (address.toLowerCase() === relayerAddress()) throw new HttpError(403, 'That wallet pays Zeeto’s gas. Sign in with a different wallet, phone or email.');
   const rawPhone = (phone?.number ?? phone?.phoneNumber ?? null) as string | null;
   const rawEmail = (email?.address ?? null) as string | null;
-  const handles = [sub, rawPhone, rawEmail].filter(Boolean).map((x) => String(x).toLowerCase());
+  // Admins can be listed by Privy id, phone, email or wallet address (ADMIN_USERS). Checked here, on the server, every time.
+  const handles = [sub, rawPhone, rawEmail, address].filter(Boolean).map((x) => String(x).toLowerCase());
   const me: Me = {
     id: sub,
     address,
-    label: rawPhone ? mask(rawPhone) : rawEmail ? mask(rawEmail) : 'Customer',
+    label: rawPhone ? mask(rawPhone) : rawEmail ? mask(rawEmail) : `${address.slice(0, 6)}…${address.slice(-4)}`,
     phone: rawPhone ? rawPhone.replace(/[^\d+]/g, '') : null,
     admin: env.admins.some((a) => handles.includes(a)),
   };

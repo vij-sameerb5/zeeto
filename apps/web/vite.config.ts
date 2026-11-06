@@ -14,14 +14,15 @@ export default defineConfig(({ mode }) => {
       dedupe: ['@solana/kit', '@solana-program/system', '@solana-program/token', '@solana-program/memo'],
     },
     define: { __SINGLE__: JSON.stringify(single) },
-    build: single ? { assetsInlineLimit: 100_000_000, chunkSizeWarningLimit: 20_000 } : { chunkSizeWarningLimit: 2_000 },
+    build: single ? { assetsInlineLimit: 100_000_000, chunkSizeWarningLimit: 20_000 } : { chunkSizeWarningLimit: 6_000 },
     plugins: [
       react(),
       !single &&
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['icon.svg'],
-          workbox: { globPatterns: ['**/*.{js,css,html,svg}'], navigateFallbackDenylist: [/^\/api\//, /^\/checkout\.js$/] },
+          // The sign-in library is large; allow it in the offline cache instead of failing the build.
+          workbox: { globPatterns: ['**/*.{js,css,html,svg}'], maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, navigateFallbackDenylist: [/^\/api\//, /^\/checkout\.js$/] },
           manifest: {
             name: 'Zeeto',
             short_name: 'Zeeto',

@@ -19,6 +19,8 @@ export interface Session {
   /** Raw ids (Privy id, phone, email) for allow-list checks. Never shown. */
   handles: string[];
   address: `0x${string}` | null;
+  /** Signed in with MetaMask (or another browser wallet): payments show that wallet's own confirm. */
+  external?: boolean;
   login: () => void;
   logout: () => void;
   /** Signs with the embedded wallet (Privy only). */
@@ -37,14 +39,18 @@ function PrivyBridge({ children }: { children: ReactNode }) {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
   useEffect(() => { setTokenGetter(() => getAccessToken()); }, [getAccessToken]);
   const { wallets } = useWallets();
-  const embedded = wallets.find((w) => w.walletClientType === 'privy') ?? wallets[0];
+  // Phone/email users pay with the wallet Privy made for them. MetaMask users pay with the MetaMask wallet they signed in with
+  // (never just any wallet the browser happens to have connected). The server picks the same one.
+  const linked = user?.wallet?.address?.toLowerCase();
+  const embedded = wallets.find((w) => w.walletClientType === 'privy') ?? wallets.find((w) => w.address.toLowerCase() === linked);
   const value = useMemo<Session>(() => ({
     mode: 'privy',
     ready,
     authed: authenticated,
     userId: user?.id ?? null,
-    label: user?.phone?.number ? mask(user.phone.number) : user?.email?.address ? mask(user.email.address) : null,
-    handles: [user?.id, user?.phone?.number, user?.email?.address].filter((x): x is string => !!x).map((x) => x.toLowerCase()),
+    label: user?.phone?.number ? mask(user.phone.number) : user?.email?.address ? mask(user.email.address) : linked ? `${linked.slice(0, 6)}…${linked.slice(-4)}` : null,
+    handles: [user?.id, user?.phone?.number, user?.email?.address, linked].filter((x): x is string => !!x).map((x) => x.toLowerCase()),
+    external: !!embedded && embedded.walletClientType !== 'privy',
     address: (embedded?.address as `0x${string}` | undefined) ?? null,
     login: () => login(),
     logout: () => void logout(),
@@ -81,9 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={APP_ID}
       config={{
-        loginMethods: ['sms', 'email'],
-        appearance: { theme: '#0A0A0A', accentColor: '#FF7A1A', logo: `${location.origin}/icon.svg`, landingHeader: 'Sign in to Zeeto' },
-        // No wallet pop-ups: the payer never sees a signing screen, gas, chain or token. The app shows its own "Pay ₹120" confirm.
+        // Phone/email for everyone; MetaMask for people who already hold test USDT in a browser wallet.
+        loginMethods: ['sms', 'email', 'wallet'],
+        appearance: { theme: '#0A0A0A', accentColor: '#FF7A1A', logo: `${location.origin}/icon.svg`, landingHeader: 'Sign in to Zeeto', walletList: ['metamask', 'detected_ethereum_wallets'], walletChainType: 'ethereum-only' },
+        // Phone/email users get no wallet pop-ups: they never see a signing screen, gas, chain or token; the app shows its own "Pay ₹120" confirm.
+        // MetaMask users get MetaMask's own signature prompt (still no gas: the relayer submits it).
         embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' }, showWalletUIs: false },
         defaultChain: whitechain,
         supportedChains: [whitechain, unichainSepolia],

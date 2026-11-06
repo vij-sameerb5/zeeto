@@ -47,7 +47,7 @@ export default function Start() {
         <div>
           <p className="label text-z">Step {as ? 2 : 1} of 2</p>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{as ? 'Sign in or create your account' : 'How will you use Zeeto?'}</h1>
-          <p className="mt-2 text-mute">{as ? 'Use your phone number or email. New here? The same step makes your account and a wallet for you. No seed phrase.' : 'You can switch any time from your account menu.'}</p>
+          <p className="mt-2 text-mute">{as ? 'Use your phone number or email, and we make a wallet for you (no seed phrase). Already have test USDT in MetaMask? Pick MetaMask instead.' : 'You can switch any time from your account menu.'}</p>
         </div>
 
         <div className="flex flex-col gap-3" role="radiogroup" aria-label="Choose how you use Zeeto">
@@ -67,7 +67,7 @@ export default function Start() {
         {as && (
           !s.ready ? <p className="text-center text-mute">Loading sign-in…</p>
             : s.authed ? <p className="text-center text-mute">Signed in. Opening…</p>
-              : <button onClick={s.login} className="btn-z"><LogIn size={16} /> Continue with phone or email</button>
+              : <button onClick={s.login} className="btn-z"><LogIn size={16} /> Continue with phone, email or MetaMask</button>
         )}
 
         <div className="flex items-center justify-between text-sm">

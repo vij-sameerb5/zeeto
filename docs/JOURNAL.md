@@ -41,6 +41,7 @@ Earlier this evening: **ZeetoCheckout deployed** to Whitechain Sepolia at `0xB3D
 - **Role chooser + sign in/up on open.** Web `/start` and phone Welcome: "I'm shopping" / "I run a stall or shop" → one sign-in step (new phone/email = new account + wallet) → customers land on Explore, merchants on Join (or their dashboard if they already have a stall). "Just look around" stays for judges. Landing buttons and the installed PWA go through it; signing out on the phone returns to it.
 - **MetaMask top-up.** Wallet → "Add USDT from MetaMask": QR + address + 3 steps. Test USDT in a MetaMask wallet is moved once into the Zeeto wallet; paying after that is gas-free.
 - **Gemini inside WhatsApp.** Stall sends a stock photo → Gemini listing draft → `publish` puts it live. Free text in any language from stalls (`250 ka bill bana do`, `aaj 20 kilo tamatar 40`) or customers (`chai kahan milegi?`, `ravi bhaiya ko 60 rupaye bhejo`) is mapped to one existing command, which runs with its normal checks. Per-phone AI limit, drafts private and expiring. Gemini code shared in `api/_lib/gemini.ts`.
+- **MetaMask sign-in** next to phone/email (Privy wallet login). MetaMask users pay from MetaMask with one signature, still gas-free; the server picks the same wallet, refuses the relayer as an account, and `ADMIN_USERS` now accepts wallet addresses.
 - `npm run test:whatsapp`: offline test of the webhook with fake Meta/Supabase/Gemini.
 - Launch checklist artifact ("you vs me") with how to verify each step.
 

@@ -59,13 +59,15 @@ export default function Wallet() {
               ))}
             </div>
           </div>
-          {s.authed && s.address && <TopUp address={s.address} />}
+          {s.authed && s.address && (s.external
+            ? <p className="panel p-4 text-sm text-mute">Signed in with <b className="text-chalk">MetaMask</b>. You pay from this wallet: MetaMask asks you to sign, Zeeto pays the gas. Keep it on Whitechain Testnet (1874).</p>
+            : <TopUp address={s.address} />)}
           <button onClick={() => setSwap(true)} className="btn-line"><ArrowRightLeft size={16} /> Swap ETH → USDC with Uniswap</button>
           <TapToPaySoon />
           <a href="https://testnet.yetitrade.fi/" target="_blank" rel="noreferrer" className="btn-line"><ArrowRightLeft size={16} /> Get test USDT (swap WBT on YetiTrade)</a>
           <a href={CHAINS.whitechain.faucet} target="_blank" rel="noreferrer" className="btn-line"><Droplets size={16} /> Get test WBT (gas) from the faucet</a>
           <ul className="panel flex flex-col gap-3 p-5 text-sm text-mute">
-            <li className="flex gap-2"><KeyRound size={16} className="mt-0.5 shrink-0 text-z" /> Made for you at sign-in (Privy embedded wallet). No seed phrase to lose, no MetaMask.</li>
+            <li className="flex gap-2"><KeyRound size={16} className="mt-0.5 shrink-0 text-z" /> {s.external ? 'Your own MetaMask wallet. Zeeto never sees its keys.' : 'Made for you at sign-in (Privy embedded wallet). No seed phrase to lose.'}</li>
             <li className="flex gap-2"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-z" /> Zeeto never holds your keys or your money. Payments go straight from you to the stall.</li>
           </ul>
         </section>
