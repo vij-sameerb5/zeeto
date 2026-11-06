@@ -57,10 +57,11 @@ export default function Join() {
   };
 
   const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
   const finish = async () => {
     // With the Zeeto server: the stall is saved there (everyone can see it), payouts to your own Privy wallet, set by the server.
     if (privy && session.authed && serverOn()) {
-      setSaving(true);
+      setSaving(true); setErr('');
       try {
         const cover = CATEGORIES[cat].cover;
         const r = await api<{ vendor: Vendor }>('/api/stalls', { body: {
@@ -72,7 +73,8 @@ export default function Join() {
         setLiveId(r.vendor.id);
         setStep(4);
       } catch (e) {
-        useApp.getState().say((e as Error).message);
+        // Shown under the button (a toast is easy to miss) so the merchant knows what to fix.
+        setErr((e as Error).message || 'Couldn’t save your stall. Try again.');
       } finally { setSaving(false); }
       return;
     }
@@ -168,7 +170,7 @@ export default function Join() {
         )}
 
         {step === 3 && (
-          <Step icon={<KeyRound />} title="Your payment wallet" sub="Zeeto makes a wallet tied to your phone number. Customers’ USDT lands here directly. No seed phrase, nothing to install.">
+          <Step icon={<KeyRound />} title="Your payment wallet" sub={session.external ? "Customers’ USDT lands directly in the MetaMask wallet you signed in with. Zeeto never holds it." : "Zeeto makes a wallet tied to your phone or email. Customers’ USDT lands here directly. No seed phrase, nothing to install."}>
             <div className="panel flex items-center gap-3 p-4">
               {wallet ? <Check className="text-good" /> : <Loader2 className="animate-spin text-z" />}
               <div className="flex-1"><div className="font-semibold">{wallet ? 'Wallet ready' : 'Creating your wallet…'}</div><div className="font-mono text-sm text-mute">{wallet ? short(wallet) : '—'} · Whitechain</div></div>
@@ -191,11 +193,12 @@ export default function Join() {
           </div>
         )}
 
-        {step < 4 && (
+        {step < 4 && (<>
           <button disabled={!can || saving} onClick={() => (step === 3 ? void finish() : setStep(step + 1))} className="btn-z py-4 text-base">
-            {step === 3 ? 'Go live' : 'Continue'}
+            {step === 3 ? (saving ? 'Going live…' : 'Go live') : 'Continue'}
           </button>
-        )}
+          {!!err && step === 3 && <p role="alert" className="rounded-2xl bg-bad-soft p-3 text-center text-sm text-bad">{err}</p>}
+        </>)}
       </div>
     </div>
   );

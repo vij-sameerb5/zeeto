@@ -30,7 +30,7 @@ export function StallRow({ v, active, onHover }: { v: Vendor; active?: boolean; 
       </div>
       <div className="flex items-start justify-between gap-3 px-1 pt-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5"><h3 className="truncate font-semibold">{v.name}</h3>{v.verified && <BadgeCheck size={15} className="shrink-0 text-z" aria-label="Verified" />}</div>
+          <div className="flex items-center gap-1.5"><h3 className="truncate font-semibold">{v.name}</h3>{v.verified && <BadgeCheck size={15} className="shrink-0 text-z" aria-label="Verified" />}{v.payoutReal ? <span className="shrink-0 rounded-full bg-good-soft px-1.5 py-0.5 font-mono text-[9px] uppercase text-good">Real</span> : <span className="shrink-0 rounded-full bg-white/5 px-1.5 py-0.5 font-mono text-[9px] uppercase text-dim">Sample</span>}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-mute">
             <span>{CATEGORIES[v.category].label}</span><span className="text-dim">·</span>
             <span className="nums">{distance(km(ME.home, v.location))}</span><span className="text-dim">·</span>
@@ -53,7 +53,7 @@ export function StallPeek({ v, products }: { v: Vendor; products: Product[] }) {
       <div className="flex items-center gap-3 p-3">
         <Face media={v.avatar} size={52} ring={v.fresh} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5"><h3 className="truncate text-[17px] font-bold">{v.name}</h3>{v.verified && <BadgeCheck size={15} className="shrink-0 text-z" />}</div>
+          <div className="flex items-center gap-1.5"><h3 className="truncate text-[17px] font-bold">{v.name}</h3>{v.verified && <BadgeCheck size={15} className="shrink-0 text-z" />}{v.payoutReal ? <span className="shrink-0 rounded-full bg-good-soft px-1.5 py-0.5 font-mono text-[9px] uppercase text-good">Real</span> : <span className="shrink-0 rounded-full bg-white/5 px-1.5 py-0.5 font-mono text-[9px] uppercase text-dim">Sample</span>}</div>
           <div className="text-[13px] text-mute">{CATEGORIES[v.category].label} · {distance(km(ME.home, v.location))} · <Star size={11} className="inline fill-z text-z" /> {v.rating}</div>
         </div>
         <button onClick={() => follow(v.id)} className={`pill ${following ? '' : 'pill-on'}`}>{following ? 'Following' : 'Follow'}</button>
