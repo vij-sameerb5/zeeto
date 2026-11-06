@@ -14,7 +14,8 @@ export const env = {
   /** ZeetoCheckout on Whitechain Sepolia (deployed + verified). Every payment and refund goes through it. */
   checkout: get('CHECKOUT_ADDRESS'),
   /** Hot wallet that submits customers' signed payments and pays the WBT gas on the business's behalf. Holds only WBT. */
-  relayerKey: get('RELAYER_PRIVATE_KEY'),
+  // MetaMask exports keys without the 0x; accept both.
+  relayerKey: ((k) => (k && !k.startsWith('0x') ? `0x${k}` : k))(get('RELAYER_PRIVATE_KEY')),
   // Relayer limits: what stops anyone draining it (see docs/ARCHITECTURE.md → "Relayer").
   relayMinInr: num('RELAY_MIN_INR', 10),
   relayUserPerDay: num('RELAY_USER_PER_DAY', 25),
