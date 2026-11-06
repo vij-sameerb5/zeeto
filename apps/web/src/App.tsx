@@ -3,6 +3,7 @@ import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-rout
 import { SellerFrame, ShopperFrame } from './components/Frame';
 import Landing from './screens/Landing';
 import AppLink from './screens/AppLink';
+import Start from './screens/Start';
 import Bag from './screens/customer/Bag';
 import { PayRequestPage, PayStall } from './screens/customer/CounterPay';
 import Explore from './screens/customer/Explore';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/join" element={<Join />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/app-link" element={<AppLink />} />
+        <Route path="/start" element={<Start />} />
         <Route path="/p/:id" element={<PayStall />} />
         <Route path="/pay/r/:id" element={<PayRequestPage />} />
         <Route element={<ShopperFrame />}>

@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, Coins, Heart, MapPin, Play, QrCode, ShieldCheck, ShoppingBag, Store } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useApp } from '../store';
 import { CATEGORIES, MARKET_VIDEOS, POSTS, STORIES, VENDORS, ago, type Category } from '@zeeto/core';
 import { Face, Icon, Pic, Wordmark } from '../components/kit';
 import { img, vid } from '../lib/media';
@@ -7,7 +8,12 @@ import { img, vid } from '../lib/media';
 const count = (c: Category) => VENDORS.filter((v) => v.category === c).length;
 const TILES: Category[] = ['vegetables', 'street-food', 'pharmacy', 'electrical', 'chai', 'sweets', 'hardware', 'flowers'];
 
+/** Opened as the installed app (home-screen icon): skip the marketing page. */
+const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches; } catch { return false; } };
+
 export default function Landing() {
+  const startAs = useApp((x) => x.startAs);
+  if (standalone()) return <Navigate to={startAs === 'merchant' ? '/sell' : startAs === 'customer' ? '/explore' : '/start'} replace />;
   const cats = Object.keys(CATEGORIES) as Category[];
   const ravi = VENDORS[0];
   return (
@@ -27,7 +33,7 @@ export default function Landing() {
                 <a key={h} href={h} className="rounded-full px-4 py-2 text-chalk/80 hover:bg-white/10 hover:text-chalk">{l}</a>
               ))}
             </nav>
-            <Link to="/explore" className="btn-chalk px-4 py-2.5 text-sm">Open app</Link>
+            <Link to="/start" className="btn-chalk px-4 py-2.5 text-sm">Sign in</Link>
           </header>
 
           <div className="absolute inset-x-0 bottom-0 z-10 grid gap-6 p-4 md:grid-cols-12 md:items-end md:p-8">
@@ -41,11 +47,11 @@ export default function Landing() {
                 {[`${VENDORS.length} stalls`, `${cats.length} kinds of shop`, 'USDT · ETH'].map((t) => <span key={t} className="frost rounded-full px-3 py-1.5 font-mono text-[11px] tracking-wider">{t}</span>)}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Link to="/explore" className="group inline-flex items-center gap-3 rounded-full bg-chalk py-1 pl-6 pr-1 text-[15px] font-semibold text-bg">
+                <Link to="/start?as=customer" className="group inline-flex items-center gap-3 rounded-full bg-chalk py-1 pl-6 pr-1 text-[15px] font-semibold text-bg">
                   Explore the market
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-z text-z-ink transition group-hover:scale-110"><ArrowRight size={18} /></span>
                 </Link>
-                <Link to="/join" className="frost rounded-full px-5 py-3.5 text-[15px] font-semibold">I sell here</Link>
+                <Link to="/start?as=merchant" className="frost rounded-full px-5 py-3.5 text-[15px] font-semibold">I sell here</Link>
               </div>
               <div className="frost hidden items-center gap-3 rounded-2xl p-3 md:flex">
                 <Face media={ravi.avatar} size={42} ring />

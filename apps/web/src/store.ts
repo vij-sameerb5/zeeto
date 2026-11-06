@@ -56,6 +56,9 @@ interface S {
   stallFlags: Record<string, { suspended?: boolean; verified?: boolean }>;
   /** Vendor finished onboarding in this browser. */
   onboarded: boolean;
+  /** What this person picked on the start screen: shopping or selling. Only decides where the app opens. */
+  startAs: 'customer' | 'merchant' | null;
+  setStartAs: (r: 'customer' | 'merchant' | null) => void;
   toast: string | null;
 
   follow: (vendorId: string) => void;
@@ -121,6 +124,7 @@ const fresh = () => ({
   roles: {} as Record<string, 'customer' | 'merchant' | 'admin'>,
   stallFlags: {} as Record<string, { suspended?: boolean; verified?: boolean }>,
   onboarded: false,
+  startAs: null as 'customer' | 'merchant' | null,
   toast: null as string | null,
 });
 
@@ -245,6 +249,7 @@ export const useApp = create<S>()(
           points: [{ id: `pt-${orderId}`, points: pts, label: `Paid at ${v?.name}`, at: new Date().toISOString(), vendorId: o.vendorId }, ...get().points],
         });
       },
+      setStartAs: (startAs) => set({ startAs }),
       setRole: (id, role) => set({ roles: { ...get().roles, [id]: role } }),
       setRemoteStalls: (vendors, products) => {
         const ids = new Set(vendors.map((v) => v.id));

@@ -1,3 +1,4 @@
+import { QRCodeSVG } from 'qrcode.react';
 import { ArrowRightLeft, Copy, Droplets, KeyRound, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -58,6 +59,7 @@ export default function Wallet() {
               ))}
             </div>
           </div>
+          {s.authed && s.address && <TopUp address={s.address} />}
           <button onClick={() => setSwap(true)} className="btn-line"><ArrowRightLeft size={16} /> Swap ETH → USDC with Uniswap</button>
           <TapToPaySoon />
           <a href="https://testnet.yetitrade.fi/" target="_blank" rel="noreferrer" className="btn-line"><ArrowRightLeft size={16} /> Get test USDT (swap WBT on YetiTrade)</a>
@@ -171,5 +173,29 @@ function SwapSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         {!live && <div className="flex justify-center"><Sim /></div>}
       </div>
     </Modal>
+  );
+}
+
+/** Already holding test USDT in MetaMask (or any wallet)? Send it here once; after that every payment is one tap and gas-free. */
+function TopUp({ address }: { address: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="panel p-4">
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between text-left">
+        <span><span className="block font-bold">Add USDT from MetaMask</span><span className="block text-sm text-mute">Move test USDT you already hold into this wallet.</span></span>
+        <span className="text-z">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <div className="mt-4 flex flex-col items-center gap-3 text-sm">
+          <div className="rounded-2xl bg-chalk p-2"><QRCodeSVG value={address} size={150} bgColor="#FAF8F3" fgColor="#0A0A0A" /></div>
+          <code className="break-all text-center font-mono text-xs text-chalk">{address}</code>
+          <ol className="list-decimal space-y-1 pl-5 text-mute">
+            <li>In MetaMask, switch to <b className="text-chalk">Whitechain Testnet</b> (chain 1874).</li>
+            <li>Send <b className="text-chalk">USDT</b> to the address above (scan or paste).</li>
+            <li>That’s it. Paying stalls costs no gas, so you don’t need WBT here.</li>
+          </ol>
+        </div>
+      )}
+    </div>
   );
 }
