@@ -28,3 +28,4 @@ export async function chainStatus() {
   const [id, block] = await Promise.all([publicClient.getChainId(), publicClient.getBlockNumber()]);
   return { id, block: Number(block) };
 }
+export { unichainSepolia } from 'viem/chains';

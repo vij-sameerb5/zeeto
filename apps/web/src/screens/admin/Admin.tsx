@@ -1,12 +1,14 @@
 import { Activity, BadgeCheck, Ban, CheckCircle2, CircleDashed, ExternalLink, LayoutDashboard, Receipt, Shield, Store, Users, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ADDRESSES, CATEGORIES, CHAINS, VENDORS, ago, inr, short } from '@zeeto/core';
+import { ADDRESSES, CATEGORIES, CHAINS, ago, inr, short } from '@zeeto/core';
 import { AccountButton } from '../../components/Account';
 import { Face, Mark, Metric, Status } from '../../components/kit';
 import { useRole, useSession, type Role } from '../../lib/auth';
 import { chainStatus } from '../../lib/chain';
-import { useApp } from '../../store';
+import { findVendor, useApp, useVendors } from '../../store';
+import { useServer } from '../../lib/api';
+import AdminLive from './AdminLive';
 
 type Tab = 'overview' | 'users' | 'stalls' | 'orders' | 'system';
 const TABS: [Tab, string, ReactNode][] = [
@@ -22,6 +24,7 @@ export default function Admin() {
   const s = useSession();
   const role = useRole();
   const [tab, setTab] = useState<Tab>('overview');
+  const live = useServer((x) => x.status === 'on');
 
   if (!s.ready) return <div className="p-10 text-center text-mute">Loading…</div>;
   if (role !== 'admin') {
@@ -30,7 +33,7 @@ export default function Admin() {
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
           <Shield size={36} className="text-z" />
           <h1 className="text-2xl font-extrabold">Admins only</h1>
-          <p className="text-mute">{s.authed ? 'This account isn’t on the admin list. Ask the Zeeto team to add your phone or email to VITE_ADMIN_USERS.' : 'Sign in with an admin phone number or email.'}</p>
+          <p className="text-mute">{s.authed ? 'This account isn’t on the admin list. Add your phone or email to ADMIN_USERS (server) and VITE_ADMIN_USERS.' : 'Sign in with an admin phone number or email.'}</p>
           {!s.authed && <AccountButton />}
           <Link to="/explore" className="text-sm text-z">Back to Zeeto</Link>
         </div>
@@ -51,11 +54,13 @@ export default function Admin() {
         </nav>
       </header>
       <main className="gutter mx-auto max-w-6xl py-6">
+        {live ? <AdminLive tab={tab} /> : <>
         {tab === 'overview' && <Overview />}
         {tab === 'users' && <UsersTab />}
         {tab === 'stalls' && <Stalls />}
         {tab === 'orders' && <Orders />}
         {tab === 'system' && <System />}
+        </>}
       </main>
     </div>
   );
@@ -72,6 +77,7 @@ function useAllOrders() {
 }
 
 function Overview() {
+  const all = useVendors();
   const orders = useAllOrders();
   const flags = useApp((s) => s.stallFlags);
   const paid = orders.filter((o) => o.payment);
@@ -81,16 +87,16 @@ function Overview() {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Metric label="Stalls live" value={VENDORS.length - suspended} hint={`${suspended} suspended`} hot />
+        <Metric label="Stalls live" value={all.length - suspended} hint={`${suspended} suspended`} hot />
         <Metric label="Orders" value={orders.length} hint={`${open} open now`} />
         <Metric label="Volume" value={usdt.toFixed(2)} hint="USDT + USDC, net of refunds" />
-        <Metric label="Categories" value={new Set(VENDORS.map((v) => v.category)).size} hint="kinds of stall" />
+        <Metric label="Categories" value={new Set(all.map((v) => v.category)).size} hint="kinds of stall" />
       </div>
       <section className="panel p-5">
         <div className="label mb-3">Latest activity</div>
         <ul className="divide-y divide-line">
           {orders.slice(0, 8).map((o) => {
-            const v = VENDORS.find((x) => x.id === o.vendorId)!;
+            const v = findVendor(o.vendorId)!;
             return <li key={o.id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span className="min-w-0 truncate"><b>{o.customer}</b> → {v.name} <span className="text-dim">· {ago(o.at)}</span></span><span className="flex shrink-0 items-center gap-2"><span className="nums">{inr(o.inr)}</span><Status s={o.status} /></span></li>;
           })}
         </ul>
@@ -102,6 +108,7 @@ function Overview() {
 interface Person { id: string; name: string; handle: string; role: Role; detail: string; you?: boolean }
 
 function UsersTab() {
+  const all = useVendors();
   const s = useSession();
   const myRole = useRole();
   const roles = useApp((x) => x.roles);
@@ -113,10 +120,10 @@ function UsersTab() {
   const people: Person[] = useMemo(() => {
     const list: Person[] = [];
     if (s.authed && s.userId) list.push({ id: s.userId, name: 'You', handle: s.label ?? s.userId, role: myRole, detail: s.address ? short(s.address) : 'no wallet yet', you: true });
-    VENDORS.forEach((v) => list.push({ id: `vendor:${v.id}`, name: v.owner, handle: v.name, role: roles[`vendor:${v.id}`] ?? 'merchant', detail: CATEGORIES[v.category].label }));
+    all.forEach((v) => list.push({ id: `vendor:${v.id}`, name: v.owner, handle: v.name, role: roles[`vendor:${v.id}`] ?? 'merchant', detail: CATEGORIES[v.category].label }));
     [...new Set(orders.map((o) => o.customer))].filter((n) => n !== 'Priya' || !s.authed).forEach((n) => list.push({ id: `cust:${n}`, name: n, handle: 'customer', role: roles[`cust:${n}`] ?? 'customer', detail: `${orders.filter((o) => o.customer === n).length} orders` }));
     return list;
-  }, [s, myRole, roles, orders]);
+  }, [s, myRole, roles, orders, all]);
   const shown = people.filter((p) => !q || `${p.name} ${p.handle}`.toLowerCase().includes(q.toLowerCase()));
 
   return (
@@ -144,12 +151,13 @@ function UsersTab() {
 }
 
 function Stalls() {
+  const all = useVendors();
   const flags = useApp((s) => s.stallFlags);
   const setFlag = useApp((s) => s.setStallFlag);
   const say = useApp((s) => s.say);
   return (
     <ul className="grid gap-3 md:grid-cols-2">
-      {VENDORS.map((v) => {
+      {all.map((v) => {
         const f = flags[v.id] ?? {};
         const verified = f.verified ?? v.verified;
         return (
@@ -177,7 +185,7 @@ function Orders() {
         <thead><tr className="border-b border-line text-left text-xs text-mute"><th className="p-3">Order</th><th>Customer → stall</th><th>Amount</th><th>Paid</th><th>Status</th><th>Tx</th></tr></thead>
         <tbody>
           {orders.map((o) => {
-            const v = VENDORS.find((x) => x.id === o.vendorId)!;
+            const v = findVendor(o.vendorId)!;
             return (
               <tr key={o.id} className="border-b border-line last:border-0">
                 <td className="p-3 font-mono">{o.id.toUpperCase()}</td>
@@ -203,13 +211,11 @@ function System() {
   const rows: [string, 'ok' | 'off' | 'wait' | 'err', string][] = [
     ['Whitechain RPC', chain === null ? 'wait' : chain === 'err' ? 'err' : chain.id === CHAINS.whitechain.id ? 'ok' : 'err', chain && chain !== 'err' ? `chain ${chain.id} · block ${chain.block.toLocaleString('en-IN')} · ${CHAINS.whitechain.rpc}` : chain === 'err' ? 'unreachable' : 'checking…'],
     ['Test USDT', 'ok', `${short(ADDRESSES.usdtWhitechain)} · 6 decimals (checked on chain)`],
-    ['StreetPayCheckout', env.VITE_STREETPAY_ADDRESS ? 'ok' : 'off', env.VITE_STREETPAY_ADDRESS ? short(env.VITE_STREETPAY_ADDRESS) : 'not deployed yet: payments are simulated'],
+    ['ZeetoCheckout', 'off', 'server not connected: payments are simulated (see apps/web/.env.example)'],
     ['Privy login', s.mode === 'privy' ? 'ok' : 'off', s.mode === 'privy' ? 'app id set · SMS + email · embedded wallet on 1874' : 'VITE_PRIVY_APP_ID missing: demo sign-in'],
     ['Mapbox', env.VITE_MAPBOX_TOKEN ? 'ok' : 'off', env.VITE_MAPBOX_TOKEN ? 'token set' : 'VITE_MAPBOX_TOKEN missing: offline map'],
-    ['Supabase', env.VITE_SUPABASE_URL ? 'ok' : 'off', env.VITE_SUPABASE_URL ? 'project url set · API not built yet' : 'VITE_SUPABASE_URL missing'],
-    ['0G AI', 'off', 'mocked · needs key'],
-    ['Arkiv', 'off', 'not connected · needs key'],
-    ['WhatsApp', 'off', 'not connected · needs Meta test number'],
+    ['Zeeto server', 'off', '/api not reachable: run `npx vercel dev` or deploy to Vercel'],
+    ['Gemini · Uniswap · WhatsApp', 'off', 'server-side keys; shown here once the server is up'],
   ];
   const icon = { ok: <CheckCircle2 size={18} className="text-good" />, off: <CircleDashed size={18} className="text-dim" />, wait: <CircleDashed size={18} className="animate-spin text-z" />, err: <XCircle size={18} className="text-bad" /> };
   return (

@@ -1,7 +1,7 @@
 import { ClipboardList, Compass, Home, Images, Package, QrCode, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { MY_STALL, useApp, useBagCount } from '../store';
+import { useMyStallId, useApp, useBagCount } from '../store';
 import { AccountButton } from './Account';
 import { Mark, Toast } from './kit';
 
@@ -76,7 +76,8 @@ export function ShopperFrame() {
 }
 
 export function SellerFrame() {
-  const waiting = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY_STALL && o.status === 'paid').length);
+  const MY = useMyStallId();
+  const waiting = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY && o.status === 'paid').length);
   return (
     <div className="min-h-[100dvh] pb-24 md:pb-0 md:pl-[84px]">
       <Outlet />

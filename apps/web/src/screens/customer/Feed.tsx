@@ -1,10 +1,10 @@
 import { BadgeCheck, Bookmark, Heart, MessageCircle, Send } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { POSTS, VENDORS, ago, inr, type Post } from '@zeeto/core';
+import { POSTS, ago, inr, type Post } from '@zeeto/core';
 import { Face, Header, Pic } from '../../components/kit';
 import { StoryRail } from '../../components/Stories';
-import { useApp } from '../../store';
+import { findVendor, useApp } from '../../store';
 
 /** Instagram for the lane: stalls you follow first, every post shoppable. */
 export default function Feed() {
@@ -26,7 +26,7 @@ export default function Feed() {
       <div className="gutter mx-auto flex max-w-xl flex-col gap-6 py-5">
         <StoryRail />
         {alerts.slice(0, 2).map((a) => {
-          const v = VENDORS.find((x) => x.id === a.vendorId)!;
+          const v = findVendor(a.vendorId)!;
           return (
             <Link key={a.id} to={`/s/${v.id}`} className="flex items-center gap-3 rounded-[22px] border border-z/30 bg-gradient-to-r from-z/15 to-transparent p-3">
               <Face media={v.avatar} size={44} ring />
@@ -42,7 +42,7 @@ export default function Feed() {
 }
 
 function PostCard({ p }: { p: Post }) {
-  const v = VENDORS.find((x) => x.id === p.vendorId)!;
+  const v = findVendor(p.vendorId)!;
   const liked = useApp((s) => s.liked.includes(p.id));
   const saved = useApp((s) => s.saved.includes(p.id));
   const like = useApp((s) => s.like);

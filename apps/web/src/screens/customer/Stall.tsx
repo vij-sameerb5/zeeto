@@ -5,12 +5,13 @@ import { CATEGORIES, ME, POSTS, UNITS, ago, distance, inr, km } from '@zeeto/cor
 import { Face, Pic, Qty, Toast } from '../../components/kit';
 import { Rails, Tags } from '../../components/StallCard';
 import { img } from '../../lib/media';
-import { useApp, useVendor } from '../../store';
+import { useApp, useStallCard, useVendor } from '../../store';
 
 type Tab = 'shop' | 'posts' | 'videos' | 'about';
 
 /** Instagram profile on top, Swiggy menu underneath. */
 export default function Stall() {
+  const card = useStallCard(useParams().id);
   const { id } = useParams();
   const nav = useNavigate();
   const v = useVendor(id);
@@ -63,6 +64,12 @@ export default function Stall() {
           <a className="btn-line" href={`https://www.google.com/maps/search/?api=1&query=${v.location.lat},${v.location.lng}`} target="_blank" rel="noreferrer"><MapPin size={17} /> Directions</a>
         </div>
         <div className="mt-4"><Tags v={v} /></div>
+        {card && card.visits > 0 && (
+          <Link to="/rewards" className="mt-4 flex max-w-md items-center gap-3 rounded-2xl border border-z/30 bg-z-soft p-3 text-sm">
+            <span className="font-mono text-2xl font-bold text-z nums">{card.points}</span>
+            <span className="flex-1"><b>points on your {v.name.split(' ')[0]} card</b><span className="block text-mute">{card.tier} · {card.visits} {card.visits === 1 ? 'visit' : 'visits'}{card.next ? ` · ${card.next.at - card.visits} to ${card.next.name}` : ''}</span></span>
+          </Link>
+        )}
 
         <div className="no-bar -mx-4 mt-6 flex gap-4 overflow-x-auto px-4">
           {[['Today', v.photos[0]], ['Stall', v.photos[1] ?? v.avatar], ['Offers', v.photos[2] ?? v.avatar]].map(([l, m]) => (

@@ -1,7 +1,7 @@
 import { List, Map as MapIcon, Search } from 'lucide-react';
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CATEGORIES, GROUPS, ME, VENDORS, km, type Category, type CategoryGroup, type Vendor } from '@zeeto/core';
+import { CATEGORIES, GROUPS, ME, km, type Category, type CategoryGroup, type Vendor } from '@zeeto/core';
 import { Icon } from '../../components/kit';
 import { StallPeek, StallRow } from '../../components/StallCard';
 import StreetMap from '../../components/StreetMap';
@@ -9,7 +9,7 @@ import StreetMap from '../../components/StreetMap';
 const MapboxMap = lazy(() => import('../../components/MapboxMap'));
 const MAPBOX = !!import.meta.env.VITE_MAPBOX_TOKEN;
 import { StoryRail } from '../../components/Stories';
-import { useApp, useBagCount } from '../../store';
+import { findVendor, useApp, useBagCount, useVendors } from '../../store';
 
 type Quick = 'fresh' | 'offers' | 'following' | 'usdt' | 'eth';
 const QUICK: [Quick, string][] = [['fresh', 'Fresh today'], ['offers', 'Offers'], ['following', 'Following'], ['usdt', 'Takes USDT'], ['eth', 'Takes ETH']];
@@ -23,6 +23,9 @@ export default function Explore() {
   const products = useApp((s) => s.products);
   const follows = useApp((s) => s.follows);
   const edits = useApp((s) => s.edits);
+  const vendors = useVendors();
+  // The offline street map only draws Kalbadevi; stalls further away still show in the list and on Mapbox.
+  const near = useMemo(() => vendors.filter((v) => km(ME.home, v.location) < 4), [vendors]);
   const flags = useApp((s) => s.stallFlags);
   const bag = useBagCount();
   const bagStall = useApp((s) => s.bag.vendorId);
@@ -33,9 +36,9 @@ export default function Explore() {
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!quick || (quick === 'fresh' && v.fresh) || (quick === 'offers' && !!v.offer) || (quick === 'following' && follows.includes(v.id)) || (quick === 'usdt' && v.rails.includes('streetpay-usdt')) || (quick === 'eth' && v.rails.includes('uniswap-usdc'))) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t)));
-    return VENDORS.filter((v) => edits[v.id]?.open !== false && !flags[v.id]?.suspended).filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
-  }, [group, quick, q, follows, products, edits, flags]);
-  const hidden = useMemo(() => new Set(VENDORS.filter((v) => !shown.includes(v)).map((v) => v.id)), [shown]);
+    return vendors.filter((v) => edits[v.id]?.open !== false && !v.closed && !flags[v.id]?.suspended).filter(ok).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
+  }, [group, quick, q, follows, products, edits, flags, vendors]);
+  const hidden = useMemo(() => new Set(vendors.filter((v) => !shown.includes(v)).map((v) => v.id)), [shown, vendors]);
   const peek = shown.find((v) => v.id === sel);
 
   const search = (
@@ -86,10 +89,10 @@ export default function Explore() {
 
       <section className={`relative h-[100dvh] md:block md:flex-1 ${view === 'map' ? 'block' : 'hidden'}`}>
         {MAPBOX ? (
-          <Suspense fallback={<StreetMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}>
-            <MapboxMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />
+          <Suspense fallback={<StreetMap vendors={near} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}>
+            <MapboxMap vendors={vendors} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />
           </Suspense>
-        ) : <StreetMap vendors={VENDORS} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}
+        ) : <StreetMap vendors={near} me={ME.home} selected={peek?.id ?? null} onSelect={setSel} hidden={hidden} />}
         <div className="gutter absolute inset-x-0 top-0 flex flex-col gap-2.5 bg-gradient-to-b from-bg via-bg/75 to-transparent pb-8 pt-4 pt-safe md:hidden">
           <div className="flex items-center justify-between">
             <div><div className="label">Kalbadevi · Mumbai</div><div className="text-xl font-extrabold tracking-tight">{shown.length} stalls near you</div></div>
@@ -105,7 +108,7 @@ export default function Explore() {
 
       {bag > 0 && bagStall && (
         <Link to="/bag" className="btn-z fixed inset-x-4 bottom-[88px] z-30 mx-auto max-w-md justify-between shadow-glow md:bottom-6 md:left-auto md:right-6 md:w-[380px]">
-          <span>{bag} item{bag > 1 ? 's' : ''} · {VENDORS.find((v) => v.id === bagStall)?.name}</span><span>View bag →</span>
+          <span>{bag} item{bag > 1 ? 's' : ''} · {findVendor(bagStall)?.name}</span><span>View bag →</span>
         </Link>
       )}
     </div>

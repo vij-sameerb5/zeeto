@@ -1,16 +1,18 @@
 import { Camera, Loader2, Mic, Minus, Plus, Sparkles, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { UNITS, inr, mockAi, type AiDraft, type Unit } from '@zeeto/core';
+import { UNITS, inr, type AiDraft, type Unit } from '@zeeto/core';
 import { Header, Modal, Pic, Sim } from '../../components/kit';
 import { photoToDataUrl } from '../../lib/upload';
-import { MY_STALL, useApp } from '../../store';
+import { snapDraft, voiceDraft } from '../../lib/ai';
+import { useMyStallId, useApp } from '../../store';
 
 const clampPrice = (n: number) => Math.max(1, Math.min(100000, Math.round(n)));
 
 export default function Products() {
+  const MY = useMyStallId();
   const [q, setQ] = useSearchParams();
-  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY_STALL));
+  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY));
   const setPrice = useApp((s) => s.setPrice);
   const setStock = useApp((s) => s.setStock);
   const [snap, setSnap] = useState(q.get('snap') === '1');
@@ -55,6 +57,7 @@ export default function Products() {
 
 /** Photo or a sentence → AI draft → seller edits → publish. AI never publishes on its own. */
 function SnapSell({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const MY = useMyStallId();
   const publish = useApp((s) => s.publish);
   const say = useApp((s) => s.say);
   const file = useRef<HTMLInputElement>(null);
@@ -72,14 +75,13 @@ function SnapSell({ open, onClose }: { open: boolean; onClose: () => void }) {
       const url = await photoToDataUrl(f);
       setPhoto(url);
       setBusy(true);
-      setD(await mockAi.snap(null));
+      setD(await snapDraft(url));
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   const fromText = async () => {
     if (!text.trim()) return;
-    setBusy(true);
-    setD(await mockAi.voice(null, text.trim().slice(0, 200)));
-    setBusy(false);
+    setBusy(true); setErr('');
+    try { setD(await voiceDraft(text.trim().slice(0, 200))); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   const edit = (i: number, k: 'priceInr' | 'qty', v: string) => d && setD({ ...d, items: d.items.map((it, j) => (j === i ? { ...it, [k]: Math.max(0, Math.min(100000, Number(v.replace(/\D/g, '')) || 0)) } : it)) });
   const ok = d?.items.every((it) => it.priceInr > 0 && it.qty > 0);
@@ -124,7 +126,7 @@ function SnapSell({ open, onClose }: { open: boolean; onClose: () => void }) {
             <div className="font-mono text-[10px] text-dim">{d.run.model} · {d.run.requestId} · {d.run.ms} ms</div>
             <div className="flex gap-2">
               <button onClick={() => { setD(null); setPhoto(null); }} className="btn-line">Start over</button>
-              <button disabled={!ok} onClick={() => { publish(MY_STALL, d, photo ?? undefined); say('Published. Followers will see it on your stall.'); onClose(); }} className="btn-z flex-1">Publish</button>
+              <button disabled={!ok} onClick={() => { publish(MY, d, photo ?? undefined); say('Published. Followers will see it on your stall.'); onClose(); }} className="btn-z flex-1">Publish</button>
             </div>
           </div>
         )}
@@ -134,6 +136,7 @@ function SnapSell({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function AddProduct({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const MY = useMyStallId();
   const addProduct = useApp((s) => s.addProduct);
   const say = useApp((s) => s.say);
   const [name, setName] = useState('');
@@ -146,7 +149,7 @@ function AddProduct({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   const save = () => {
     if (!valid) return;
-    addProduct({ vendorId: MY_STALL, name: name.trim().slice(0, 60), unit, priceInr: clampPrice(Number(price)), stock: Math.min(10000, Math.floor(Number(stock))), image: photo ?? 'veg-1' });
+    addProduct({ vendorId: MY, name: name.trim().slice(0, 60), unit, priceInr: clampPrice(Number(price)), stock: Math.min(10000, Math.floor(Number(stock))), image: photo ?? 'veg-1' });
     say(`${name.trim()} added at ${inr(Number(price))}/${UNITS[unit]}`);
     setName(''); setPrice(''); setStock('10'); setPhoto(null);
     onClose();

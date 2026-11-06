@@ -175,12 +175,20 @@ export const VENDOR_ORDERS: Order[] = [
   { id: 'o1024', code: 'AS-731', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 2, priceInr: 30 }, { productId: 'spinach', name: 'Spinach', unit: 'bunch', qty: 1, priceInr: 20 }], inr: 80, usd: 0.95, status: 'paid', at: ago(0.3), payment: pay('streetpay-usdt', 0.95, '5d2e', 0.3), refunds: [], points: 8 },
   { id: 'o1023', code: 'NB-118', customer: 'Nisha', vendorId: 'ravi', lines: [{ productId: 'onion', name: 'Onions', unit: 'kg', qty: 3, priceInr: 40 }], inr: 120, usd: 1.43, status: 'ready', at: ago(1.1), payment: pay('uniswap-usdc', 1.43, '9e7c', 1.1), refunds: [], points: 12 },
   { id: 'o1019', code: 'DK-590', customer: 'Dev', vendorId: 'ravi', lines: [{ productId: 'basket', name: 'Mixed veg basket', unit: 'kg', qty: 1, priceInr: 60 }], inr: 60, usd: 0.71, status: 'done', at: ago(4), payment: pay('streetpay-usdt', 0.71, '1f3e', 4), refunds: [], points: 6 },
+  { id: 'oh1', code: 'HX-100', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 2, priceInr: 30 }], inr: 60, usd: 0.71, status: 'done', at: ago(30), payment: pay('streetpay-usdt', 0.71, 'a0b0', 30), refunds: [], points: 6 },
+  { id: 'oh2', code: 'HX-101', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 3, priceInr: 30 }], inr: 90, usd: 1.07, status: 'done', at: ago(75), payment: pay('streetpay-usdt', 1.07, 'a1b1', 75), refunds: [], points: 9 },
+  { id: 'oh3', code: 'HX-102', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 1, priceInr: 30 }], inr: 30, usd: 0.36, status: 'done', at: ago(122), payment: pay('streetpay-usdt', 0.36, 'a2b2', 122), refunds: [], points: 3 },
+  { id: 'oh4', code: 'HX-103', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 2, priceInr: 30 }], inr: 60, usd: 0.71, status: 'done', at: ago(170), payment: pay('streetpay-usdt', 0.71, 'a3b3', 170), refunds: [], points: 6 },
+  { id: 'oh5', code: 'HX-104', customer: 'Arjun', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 2, priceInr: 30 }], inr: 60, usd: 0.71, status: 'done', at: ago(220), payment: pay('streetpay-usdt', 0.71, 'a4b4', 220), refunds: [], points: 6 },
+  { id: 'oh6', code: 'HX-105', customer: 'Nisha', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 3, priceInr: 30 }], inr: 90, usd: 1.07, status: 'done', at: ago(48), payment: pay('streetpay-usdt', 1.07, 'a5b5', 48), refunds: [], points: 9 },
+  { id: 'oh7', code: 'HX-106', customer: 'Nisha', vendorId: 'ravi', lines: [{ productId: 'tomato', name: 'Tomatoes', unit: 'kg', qty: 4, priceInr: 30 }], inr: 120, usd: 1.43, status: 'done', at: ago(140), payment: pay('streetpay-usdt', 1.43, 'a6b6', 140), refunds: [], points: 12 },
 ];
 
 export const POINTS: PointsEntry[] = [
   { id: 'pt1', points: 11, label: "Order at Ravi's Fresh Sabzi", at: ago(74), vendorId: 'ravi' },
+  { id: 'pt0', points: 34, label: "Earlier visits at Ravi's Fresh Sabzi", at: ago(400), vendorId: 'ravi' },
   { id: 'pt2', points: 5, label: 'Order at Anna Chai Point', at: ago(26), vendorId: 'chai' },
-  { id: 'pt3', points: 25, label: 'Explorer: shopped at 3 stalls', at: ago(26) },
+  { id: 'pt3', points: 20, label: 'Welcome bonus from Anna Chai Point', at: ago(26), vendorId: 'chai' },
 ];
 
 export const REWARDS = [
@@ -189,11 +197,12 @@ export const REWARDS = [
   { id: 'rw3', vendorId: 'mithai', label: '100 g jalebi free', cost: 80 },
 ];
 
+/** Kept for old screens; loyalty is per stall now (see loyalty.ts). */
 export const TIERS = [
-  { name: 'Newcomer', at: 0 },
-  { name: 'Regular', at: 100 },
-  { name: 'Local', at: 350 },
-  { name: 'Market legend', at: 1000 },
+  { name: 'New', at: 0 },
+  { name: 'Regular', at: 3 },
+  { name: 'Favourite', at: 8 },
+  { name: 'Family', at: 20 },
 ];
 
 export const WEEK_INR = [1820, 2410, 1990, 3120, 2780, 4050, 2340];

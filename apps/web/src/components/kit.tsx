@@ -58,6 +58,7 @@ const STATUS: Record<OrderStatus, [string, string]> = {
   done: ['Picked up', 'bg-white/5 text-mute'],
   refunded: ['Refunded', 'bg-bad-soft text-bad'],
   'part-refunded': ['Part refunded', 'bg-warn-soft text-warn'],
+  expired: ['Expired · not paid', 'bg-white/5 text-mute'],
 };
 export const Status = ({ s }: { s: OrderStatus }) => <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS[s][1]}`}>{STATUS[s][0]}</span>;
 

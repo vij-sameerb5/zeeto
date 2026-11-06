@@ -1,11 +1,14 @@
-import { Copy, Droplets, KeyRound, LogIn, LogOut, ShieldCheck } from 'lucide-react';
+import { ArrowRightLeft, Copy, Droplets, KeyRound, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CHAINS, RAILS, VENDORS, ago, mockPayments, short, type Balance } from '@zeeto/core';
-import { readBalances } from '../../lib/chain';
+import { CHAINS, RAILS, ago, mockPayments, short, type Balance, type Hex, type Quote } from '@zeeto/core';
+import { createWalletClient, custom } from 'viem';
+import { api, feature } from '../../lib/api';
+import { readBalances, unichainSepolia } from '../../lib/chain';
 import { useSession } from '../../lib/auth';
-import { Header, Sim } from '../../components/kit';
-import { useApp } from '../../store';
+import { Header, Modal, Sim } from '../../components/kit';
+import { TapToPaySoon } from '../../components/Pass';
+import { findVendor, useApp } from '../../store';
 
 export default function Wallet() {
   const orders = useApp((s) => s.myOrders.filter((o) => o.payment));
@@ -14,6 +17,7 @@ export default function Wallet() {
   const [bal, setBal] = useState<Balance[] | null>(null);
   const [err, setErr] = useState('');
   const live = s.mode === 'privy' && !!s.address;
+  const [swap, setSwap] = useState(false);
   useEffect(() => {
     let on = true;
     setBal(null); setErr('');
@@ -54,6 +58,9 @@ export default function Wallet() {
               ))}
             </div>
           </div>
+          <button onClick={() => setSwap(true)} className="btn-line"><ArrowRightLeft size={16} /> Swap ETH → USDC with Uniswap</button>
+          <TapToPaySoon />
+          <a href="https://testnet.yetitrade.fi/" target="_blank" rel="noreferrer" className="btn-line"><ArrowRightLeft size={16} /> Get test USDT (swap WBT on YetiTrade)</a>
           <a href={CHAINS.whitechain.faucet} target="_blank" rel="noreferrer" className="btn-line"><Droplets size={16} /> Get test WBT (gas) from the faucet</a>
           <ul className="panel flex flex-col gap-3 p-5 text-sm text-mute">
             <li className="flex gap-2"><KeyRound size={16} className="mt-0.5 shrink-0 text-z" /> Made for you at sign-in (Privy embedded wallet). No seed phrase to lose, no MetaMask.</li>
@@ -64,7 +71,7 @@ export default function Wallet() {
         <section className="flex flex-col gap-3">
           <div className="label">Payments</div>
           {orders.map((o) => {
-            const v = VENDORS.find((x) => x.id === o.vendorId)!;
+            const v = findVendor(o.vendorId)!;
             const p = o.payment!;
             return (
               <Link key={o.id} to={`/orders/${o.id}`} className="panel flex items-center justify-between gap-3 p-4 hover:border-line-2">
@@ -79,6 +86,90 @@ export default function Wallet() {
           })}
         </section>
       </div>
+      <SwapSheet open={swap} onClose={() => setSwap(false)} />
     </div>
+  );
+}
+
+/**
+ * Top up USDC by swapping ETH on Uniswap. With the server's Uniswap key and a signed-in wallet: a real quote from the
+ * Uniswap Trading API and a real swap you sign on Unichain Sepolia. Otherwise a sample quote, marked simulated.
+ */
+function SwapSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const say = useApp((x) => x.say);
+  const s = useSession();
+  const live = feature('uniswap') && !!s.address;
+  const [usdc, setUsdc] = useState('10');
+  const [q, setQ] = useState<Quote | null>(null);
+  const [raw, setRaw] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const n = Number(usdc);
+  const valid = n >= 1 && n <= 500;
+  useEffect(() => {
+    if (!open || !valid) { setQ(null); return; }
+    let on = true;
+    setErr('');
+    const t = setTimeout(async () => {
+      try {
+        if (live) {
+          const r = await api<{ quote: Quote; raw: unknown }>('/api/uniswap', { body: { action: 'quote', usdcOut: n, swapper: s.address } });
+          if (on) { setQ(r.quote); setRaw(r.raw); }
+        } else {
+          const r = await mockPayments.quote(n);
+          if (on) setQ(r);
+        }
+      } catch (e) { if (on) { setQ(null); setErr((e as Error).message); } }
+    }, 350);
+    return () => { on = false; clearTimeout(t); };
+  }, [open, n, valid, live, s.address]);
+
+  const go = async () => {
+    setBusy(true); setErr('');
+    try {
+      if (live) {
+        const { tx } = await api<{ tx: { to: Hex; data: Hex; value: string; chainId: number } }>('/api/uniswap', { body: { action: 'swap', quote: raw } });
+        const provider = await s.provider();
+        if (!provider) throw new Error('Your wallet isn’t ready yet.');
+        const wallet = createWalletClient({ account: s.address!, chain: unichainSepolia, transport: custom(provider) });
+        await wallet.switchChain({ id: unichainSepolia.id }).catch(() => undefined);
+        const hash = await wallet.sendTransaction({ account: s.address!, chain: unichainSepolia, to: tx.to, data: tx.data, value: BigInt(tx.value) });
+        onClose();
+        say(`Swap sent on Unichain Sepolia · ${short(hash)}`);
+      } else {
+        await new Promise((r) => setTimeout(r, 900));
+        onClose();
+        say(`Swapped ${q!.ethIn.toFixed(5)} ETH → ${n.toFixed(2)} USDC (simulated)`);
+      }
+    } catch (e) {
+      const m = (e as Error).message ?? '';
+      setErr(/reject|denied|cancel/i.test(m) ? 'You cancelled the swap.' : m.slice(0, 160));
+    } finally { setBusy(false); }
+  };
+  return (
+    <Modal open={open} onClose={() => !busy && onClose()} title="Swap with Uniswap">
+      <div className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5">
+          <span className="label">You get (USDC)</span>
+          <input inputMode="decimal" value={usdc} onChange={(e) => setUsdc(e.target.value.replace(/[^0-9.]/g, '').slice(0, 6))} className="input text-2xl font-bold nums" />
+        </label>
+        {!valid && <p className="text-sm text-bad">Swap between 1 and 500 USDC.</p>}
+        {valid && (
+          <div className="rounded-2xl border border-line bg-raised p-4 text-sm">
+            {q ? (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between"><span className="text-mute">You pay</span><b className="nums">{q.ethIn.toFixed(5)} ETH</b></div>
+                <div className="flex justify-between"><span className="text-mute">Route</span><span>{q.route}</span></div>
+                <div className="flex justify-between"><span className="text-mute">Price impact · gas</span><span className="nums">{q.impactPct}% · ${q.gasUsd.toFixed(2)}</span></div>
+              </div>
+            ) : err ? <p className="text-bad">{err}</p> : <div className="h-16 animate-pulse rounded-xl bg-white/5" />}
+          </div>
+        )}
+        {q && err && <p className="text-sm text-bad">{err}</p>}
+        <button disabled={!q || !valid || busy} onClick={go} className="btn-z"><ArrowRightLeft size={16} /> {busy ? 'Confirm in your wallet…' : 'Swap'}</button>
+        <p className="text-center text-xs text-dim">{live ? 'Live quote from the Uniswap Trading API · Unichain Sepolia. Needs a little Sepolia ETH on Unichain.' : 'Sample quote (simulated). Sign in and add the Uniswap API key on the server for live swaps.'} You can also pay any demo stall in ETH: pick Uniswap at checkout.</p>
+        {!live && <div className="flex justify-center"><Sim /></div>}
+      </div>
+    </Modal>
   );
 }

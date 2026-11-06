@@ -42,7 +42,16 @@ export interface Vendor {
   followers: number;
   verified: boolean;
   rails: RailId[];
+  /** Where customers' payments go. */
   wallet: Hex;
+  /** True only when `wallet` is a real wallet the owner controls (a stall created with Privy). Demo stalls are false, so real money is never sent to them. */
+  payoutReal?: boolean;
+  /** Privy user id of the owner, for stalls created in the app. */
+  ownerId?: string;
+  /** Live stall that is closed for orders right now. */
+  closed?: boolean;
+  /** Arkiv entity for the stall's public record. */
+  arkivKey?: string | null;
   languages: string[];
   fresh: boolean;
   offer?: string;
@@ -86,7 +95,7 @@ export interface Story { id: ID; vendorId: ID; media: string; text: string; at: 
  * paying → paid (verified onchain) → accepted → ready → done.
  * A stall can reject a paid order, which refunds it.
  */
-export type OrderStatus = 'paying' | 'paid' | 'accepted' | 'ready' | 'done' | 'refunded' | 'part-refunded';
+export type OrderStatus = 'paying' | 'paid' | 'accepted' | 'ready' | 'done' | 'refunded' | 'part-refunded' | 'expired';
 
 export interface OrderLine { productId: ID; name: string; unit: Unit; qty: number; priceInr: number }
 
@@ -101,9 +110,18 @@ export interface Payment {
   quoteId?: string;
   at: ISODate;
   simulated: boolean;
+  /** Real payments: payer and stall wallets, block, and the order reference written into the transfer. */
+  from?: Hex;
+  to?: Hex;
+  block?: number;
+  memo?: Hex;
+  /** Customer signed only; Zeeto's relayer paid the network fee (EIP-3009). */
+  gasless?: boolean;
+  /** Arkiv receipt entity key. */
+  arkiv?: string | null;
 }
 
-export interface Refund { amount: number; token: 'USDC' | 'USDT'; reason: string; tx: Hex; at: ISODate; simulated: boolean }
+export interface Refund { amount: number; token: 'USDC' | 'USDT'; reason: string; tx: Hex; at: ISODate; simulated: boolean; units?: string; arkiv?: string | null }
 
 export interface Order {
   id: ID;
@@ -118,6 +136,22 @@ export interface Order {
   payment?: Payment;
   refunds: Refund[];
   points: number;
+  /** Wallet that paid, so a refund can go back to it. */
+  payer?: Hex;
+  /** Counter sale (scan & pay at the stall): done the moment it's paid. */
+  counter?: boolean;
+  /** Customer tapped "I'm at the stall". */
+  arrivedAt?: ISODate;
+  /** Customer asked to cancel before the stall accepted. The stall refunds it. */
+  cancelAsked?: boolean;
+  /** Lives on the Zeeto server (a real stall); every change goes through the API. */
+  server?: boolean;
+  /** For the stall: how many paid visits this customer has made here (server orders). */
+  visits?: number;
+  /** USDT base units and the onchain order reference (server orders). */
+  amount?: string;
+  orderRef?: Hex;
+  arkivKey?: string;
 }
 
 export interface Alert {

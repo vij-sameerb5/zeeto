@@ -1,8 +1,8 @@
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { VENDORS, ago, inr } from '@zeeto/core';
+import { ago, inr } from '@zeeto/core';
 import { Empty, Face, Header, Status } from '../../components/kit';
-import { useApp } from '../../store';
+import { findVendor, useApp } from '../../store';
 
 export default function Orders() {
   const orders = useApp((s) => s.myOrders);
@@ -10,7 +10,7 @@ export default function Orders() {
   const past = orders.filter((o) => !live.includes(o));
 
   const row = (o: (typeof orders)[number]) => {
-    const v = VENDORS.find((x) => x.id === o.vendorId)!;
+    const v = findVendor(o.vendorId)!;
     return (
       <li key={o.id}>
         <Link to={`/orders/${o.id}`} className="panel flex items-center gap-3 p-3 pr-4 transition hover:border-line-2">

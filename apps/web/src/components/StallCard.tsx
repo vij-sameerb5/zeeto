@@ -4,7 +4,8 @@ import { CATEGORIES, ME, distance, inr, km, type Product, type Vendor } from '@z
 import { useApp } from '../store';
 import { Face, Pic } from './kit';
 
-export const Rails = ({ v }: { v: Vendor }) => (
+/** Real stalls show no crypto words to shoppers; demo stalls keep their rail labels. */
+export const Rails = ({ v }: { v: Vendor }) => v.ownerId ? <span className="text-sm text-chalk/80">Phone or email · no fees</span> : (
   <div className="flex flex-wrap gap-1.5">
     {v.rails.includes('streetpay-usdt') && <span className="rounded-full border border-line bg-raised px-2 py-0.5 font-mono text-[10px] text-chalk/80">USDT · Whitechain</span>}
     {v.rails.includes('uniswap-usdc') && <span className="rounded-full border border-line bg-raised px-2 py-0.5 font-mono text-[10px] text-chalk/80">ETH→USDC · Uniswap</span>}

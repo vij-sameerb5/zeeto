@@ -3,7 +3,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS, inr, short, toUsd, type OrderLine } from '@zeeto/core';
 import { Header, Pic, Sim } from '../../components/kit';
-import { COUNTER_MAX_INR, MY_STALL, useApp, useVendor } from '../../store';
+import { COUNTER_MAX_INR, useMyStallId, useApp, useVendor, type PayRequest } from '../../store';
+import { api } from '../../lib/api';
+import { isServerStall } from '../../lib/sync';
 
 type Mode = 'amount' | 'items';
 
@@ -20,8 +22,9 @@ function announce(amount: number, usdt: string) {
 
 /** Pay at the counter: the customer asks for things in person, the stall rings it up, the customer scans and pays. */
 export default function Collect() {
-  const v = useVendor(MY_STALL)!;
-  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY_STALL && p.stock > 0));
+  const MY = useMyStallId();
+  const v = useVendor(MY)!;
+  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY && p.stock > 0));
   const openRequest = useApp((s) => s.openRequest);
   const cancelRequest = useApp((s) => s.cancelRequest);
   const [mode, setMode] = useState<Mode>('amount');
@@ -30,7 +33,23 @@ export default function Collect() {
   const [rid, setRid] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const [sound, setSound] = useState(() => { try { return localStorage.getItem('zeeto-sound') !== 'off'; } catch { return true; } });
-  const req = useApp((s) => (rid ? s.requests[rid] : undefined));
+  const localReq = useApp((s) => (rid ? s.requests[rid] : undefined));
+  const [remote, setRemote] = useState<PayRequest | null>(null);
+  const live = isServerStall(MY);
+  const req = localReq ?? (remote && remote.id === rid ? remote : undefined);
+  // Real stall: the bill lives on the server; poll it so the "Paid" sound plays the moment the payment is verified.
+  useEffect(() => {
+    if (!live || !rid) return;
+    let on = true;
+    const t = setInterval(async () => {
+      try {
+        const r = await api<{ request: PayRequest }>(`/api/requests?id=${encodeURIComponent(rid)}`, { auth: false });
+        if (on) setRemote(r.request);
+        if (r.request.status !== 'open') clearInterval(t);
+      } catch { /* keep trying */ }
+    }, 2000);
+    return () => { on = false; clearInterval(t); };
+  }, [live, rid]);
   const [now, setNow] = useState(Date.now());
   const spoke = useRef<string | null>(null);
 
@@ -56,10 +75,23 @@ export default function Collect() {
       return Number(next) > COUNTER_MAX_INR ? d : next.slice(0, 5);
     });
   };
-  const show = () => {
-    try { setRid(openRequest(MY_STALL, amount, mode === 'items' ? lines : [], 'stall')); setErr(''); } catch (e) { setErr((e as Error).message); }
+  const show = async () => {
+    if (live) {
+      try {
+        const r = await api<{ request: PayRequest }>('/api/requests', { body: { action: 'open', inr: amount, lines: mode === 'items' ? lines.map((l) => ({ name: l.name, unit: l.unit, qty: l.qty, priceInr: l.priceInr })) : [] } });
+        setRemote(r.request); setRid(r.request.id); setErr('');
+      } catch (e) { setErr((e as Error).message); }
+      return;
+    }
+    try { setRid(openRequest(MY, amount, mode === 'items' ? lines : [], 'stall')); setErr(''); } catch (e) { setErr((e as Error).message); }
   };
-  const reset = () => { if (rid && req?.status === 'open') cancelRequest(rid); setRid(null); setDigits(''); setCart({}); };
+  const reset = () => {
+    if (rid && req?.status === 'open') {
+      if (live) void api('/api/requests', { body: { action: 'cancel', id: rid } }).catch(() => undefined);
+      else cancelRequest(rid);
+    }
+    setRid(null); setRemote(null); setDigits(''); setCart({});
+  };
   const toggleSound = () => { const n = !sound; setSound(n); try { localStorage.setItem('zeeto-sound', n ? 'on' : 'off'); } catch { /* ignore */ } };
 
   const url = rid ? `${location.origin}/pay/r/${rid}` : '';
@@ -139,20 +171,21 @@ export default function Collect() {
           ) : <div className="text-sm text-bad">Expired. Make a new QR.</div>}
           <div className="flex w-full gap-2">
             <button onClick={reset} className="btn-line flex-1"><X size={16} /> Cancel</button>
-            <a href={url} target="_blank" rel="noreferrer" className="btn-line flex-1 text-sm">Open as customer (demo)</a>
+            {!live && <a href={url} target="_blank" rel="noreferrer" className="btn-line flex-1 text-sm">Open as customer (demo)</a>}
           </div>
-          <p className="text-xs text-dim">Demo without the backend: open the customer link in another tab of this browser. This screen turns green when it’s paid.</p>
-          <Sim />
+          {live
+            ? <p className="text-xs text-dim">The customer scans with any phone camera, signs in and confirms. This screen turns green once the payment is verified on Whitechain.</p>
+            : <><p className="text-xs text-dim">Demo without the backend: open the customer link in another tab of this browser. This screen turns green when it’s paid.</p><Sim /></>}
         </div>
       )}
 
       {rid && req?.status === 'paid' && (
         <div className="gutter mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
           <div className="a-up grid h-28 w-28 place-items-center rounded-full bg-good text-bg shadow-[0_0_60px_rgba(61,214,140,.55)]"><Check size={60} strokeWidth={3} /></div>
-          <div className="a-up"><div className="label text-good">Received</div><div className="mega mt-2 text-7xl nums">{inr(req.inr)}</div><div className="mt-2 font-mono text-mute">{toUsd(req.inr).toFixed(2)} USDT · from {req.payer}</div></div>
+          <div className="a-up"><div className="label text-good">Received</div><div className="mega mt-2 text-7xl nums">{inr(req.inr)}</div><div className="mt-2 font-mono text-mute">{toUsd(req.inr).toFixed(2)} USDT{req.payer ? ` · from ${req.payer}` : ''}</div></div>
           <p className="text-sm text-mute">Already in your wallet {short(v.wallet)}. Hand over the goods.</p>
           <button onClick={reset} className="btn-z w-full py-4 text-base">Next customer</button>
-          <Sim />
+          {!live && <Sim />}
         </div>
       )}
     </div>

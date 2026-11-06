@@ -1,8 +1,10 @@
 import { PrivyProvider, usePrivy, useWallets, type EIP1193Provider } from '@privy-io/react-auth';
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ME } from '@zeeto/core';
 import { useApp } from '../store';
-import { whitechain } from './chain';
+import { unichainSepolia, whitechain } from './chain';
+import { setTokenGetter } from './api';
+import { ServerSync } from './sync';
 
 export type Role = 'customer' | 'merchant' | 'admin';
 
@@ -32,7 +34,8 @@ export const PRIVY_ON = !!APP_ID;
 const mask = (s: string) => (s.startsWith('+') ? `${s.slice(0, 5)}•••• ${s.slice(-4)}` : s.replace(/^(.).+(@.+)$/, '$1•••$2'));
 
 function PrivyBridge({ children }: { children: ReactNode }) {
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  useEffect(() => { setTokenGetter(() => getAccessToken()); }, [getAccessToken]);
   const { wallets } = useWallets();
   const embedded = wallets.find((w) => w.walletClientType === 'privy') ?? wallets[0];
   const value = useMemo<Session>(() => ({
@@ -51,7 +54,7 @@ function PrivyBridge({ children }: { children: ReactNode }) {
       return embedded.getEthereumProvider();
     },
   }), [ready, authenticated, user, embedded, login, logout]);
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}><MeSync /><ServerSync authed={authenticated} userId={user?.id ?? null} />{children}</Ctx.Provider>;
 }
 
 function DemoSession({ children }: { children: ReactNode }) {
@@ -61,7 +64,14 @@ function DemoSession({ children }: { children: ReactNode }) {
     mode: 'demo', ready: true, authed, userId: authed ? 'demo:priya' : null, label: authed ? '+91 98•••• 4210' : null, handles: authed ? ['demo:priya'] : [],
     address: authed ? ME.wallet : null, login: () => set(true), logout: () => set(false), provider: async () => null,
   }), [authed]);
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}><MeSync />{children}</Ctx.Provider>;
+}
+
+/** Tells the store who is signed in, so it can find their own stall. */
+function MeSync() {
+  const s = useContext(Ctx)!;
+  useEffect(() => { useApp.getState().setMe(s.authed ? s.userId : null); }, [s.authed, s.userId]);
+  return null;
 }
 
 /** Phone or email login with an embedded wallet on Whitechain. Falls back to a demo session without an app id. */
@@ -73,9 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       config={{
         loginMethods: ['sms', 'email'],
         appearance: { theme: '#0A0A0A', accentColor: '#FF7A1A', logo: `${location.origin}/icon.svg`, landingHeader: 'Sign in to Zeeto' },
-        embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } },
+        // No wallet pop-ups: the payer never sees a signing screen, gas, chain or token. The app shows its own "Pay ₹120" confirm.
+        embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' }, showWalletUIs: false },
         defaultChain: whitechain,
-        supportedChains: [whitechain],
+        supportedChains: [whitechain, unichainSepolia],
       }}
     >
       <PrivyBridge>{children}</PrivyBridge>

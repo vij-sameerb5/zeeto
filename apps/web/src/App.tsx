@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { SellerFrame, ShopperFrame } from './components/Frame';
 import Landing from './screens/Landing';
+import AppLink from './screens/AppLink';
 import Bag from './screens/customer/Bag';
 import { PayRequestPage, PayStall } from './screens/customer/CounterPay';
 import Explore from './screens/customer/Explore';
@@ -16,6 +17,7 @@ import Admin from './screens/admin/Admin';
 import Join from './screens/seller/Join';
 import Overview from './screens/seller/Overview';
 import Payments from './screens/seller/Payments';
+import Developers from './screens/seller/Developers';
 import Products from './screens/seller/Products';
 import SellOrders from './screens/seller/SellOrders';
 import Store from './screens/seller/Store';
@@ -32,6 +34,7 @@ export default function App() {
         <Route path="/bag" element={<Bag />} />
         <Route path="/join" element={<Join />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/app-link" element={<AppLink />} />
         <Route path="/p/:id" element={<PayStall />} />
         <Route path="/pay/r/:id" element={<PayRequestPage />} />
         <Route element={<ShopperFrame />}>
@@ -48,6 +51,7 @@ export default function App() {
           <Route path="orders" element={<SellOrders />} />
           <Route path="products" element={<Products />} />
           <Route path="payments" element={<Payments />} />
+          <Route path="developers" element={<Developers />} />
           <Route path="store" element={<Store />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

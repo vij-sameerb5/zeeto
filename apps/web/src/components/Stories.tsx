@@ -1,9 +1,9 @@
 import { ChevronRight, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { STORIES, VENDORS, ago, type Story } from '@zeeto/core';
+import { STORIES, ago, type Story } from '@zeeto/core';
 import { img } from '../lib/media';
-import { useApp } from '../store';
+import { findVendor, useApp } from '../store';
 import { Face } from './kit';
 
 const MS = 5000;
@@ -19,7 +19,7 @@ export function StoryRail() {
     <>
       <div className="no-bar -mx-4 flex gap-3.5 overflow-x-auto px-4 py-1">
         {list.map((s, i) => {
-          const v = VENDORS.find((x) => x.id === s.vendorId)!;
+          const v = findVendor(s.vendorId)!;
           return (
             <button key={s.id} onClick={() => { setOpen(i); mark(s.id); }} aria-label={`${v.name} story`} className="flex w-[68px] shrink-0 flex-col items-center gap-1.5">
               <Face media={v.avatar} size={66} ring={seen.includes(s.id) ? 'seen' : true} />
@@ -37,7 +37,7 @@ function Viewer({ list, start, onClose, onSeen }: { list: Story[]; start: number
   const [i, setI] = useState(start);
   const nav = useNavigate();
   const s = list[i];
-  const v = VENDORS.find((x) => x.id === s.vendorId)!;
+  const v = findVendor(s.vendorId)!;
   const next = () => (i < list.length - 1 ? setI(i + 1) : onClose());
 
   useEffect(() => {

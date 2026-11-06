@@ -1,15 +1,16 @@
 import { ArrowRight, Bell, Camera, ClipboardList, QrCode, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { WEEK_INR, inr, toUsd } from '@zeeto/core';
+import { WEEK_INR, ago, inr, tierFor, toUsd, type Order } from '@zeeto/core';
 import { Face, Header, Metric, Sim, Status } from '../../components/kit';
-import { MY_STALL, useApp, useVendor } from '../../store';
+import { useMyStallId, useApp, useVendor } from '../../store';
 
 const DAYS = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Today'];
 
 export default function Overview() {
-  const v = useVendor(MY_STALL)!;
-  const orders = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY_STALL));
-  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY_STALL));
+  const MY = useMyStallId();
+  const v = useVendor(MY)!;
+  const orders = useApp((s) => s.stallOrders.filter((o) => o.vendorId === MY));
+  const products = useApp((s) => s.products.filter((p) => p.vendorId === MY));
   const today = orders.filter((o) => Date.now() - new Date(o.at).getTime() < 864e5 && !['paying', 'refunded'].includes(o.status));
   const sales = today.reduce((s, o) => s + o.inr, 0);
   const waiting = orders.filter((o) => o.status === 'paid');
@@ -79,6 +80,8 @@ export default function Overview() {
           </ul>
         </section>
 
+        <Regulars orders={orders} />
+
         {(low.length > 0 || out.length > 0) && (
           <section className="panel flex flex-col gap-2 p-5">
             <div className="label">Restock</div>
@@ -88,5 +91,32 @@ export default function Overview() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Who keeps coming back: visits and spend per customer at this stall, so the stall can recognise and reward them. */
+function Regulars({ orders }: { orders: Order[] }) {
+  const COUNTED = ['paid', 'accepted', 'ready', 'done', 'part-refunded'];
+  const by = new Map<string, { name: string; visits: number; spent: number; last: string }>();
+  for (const o of orders) {
+    if (!COUNTED.includes(o.status)) continue;
+    const r = by.get(o.customer) ?? { name: o.customer, visits: 0, spent: 0, last: o.at };
+    r.visits += 1; r.spent += o.inr; if (o.at > r.last) r.last = o.at;
+    by.set(o.customer, r);
+  }
+  const list = [...by.values()].sort((a, b) => b.visits - a.visits || b.spent - a.spent).slice(0, 6);
+  if (!list.length) return null;
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="label">Your regulars</div>
+      <ul className="panel divide-y divide-line">
+        {list.map((r) => (
+          <li key={r.name} className="flex items-center justify-between gap-3 p-4 text-sm">
+            <div className="min-w-0"><div className="truncate font-semibold">{r.name}</div><div className="text-mute">{tierFor(r.visits).name} · last {ago(r.last)}</div></div>
+            <div className="text-right"><div className="font-bold nums">{r.visits} {r.visits === 1 ? 'visit' : 'visits'}</div><div className="text-xs text-dim nums">{inr(r.spent)} spent</div></div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
