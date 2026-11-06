@@ -4,7 +4,9 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { FX, RAILS, UNITS, ago, inr, short, type OrderStatus } from '@zeeto/core';
 import { Face, Header, Sim, Status } from '../../components/kit';
 import { findVendor, useApp } from '../../store';
-import { orderAction, txLink } from '../../lib/pay';
+import { orderAction, PayError, retryOnServer, txLink, type PayStep } from '../../lib/pay';
+import { PaySteps } from '../../components/PayFlow';
+import { useSession } from '../../lib/auth';
 import { PassTicket, WalletPassButton } from '../../components/Pass';
 
 const TRACK: { s: OrderStatus[]; label: string }[] = [
@@ -22,6 +24,17 @@ export default function OrderDetail() {
   const askCancel = useApp((s) => s.askCancel);
   const say = useApp((s) => s.say);
   const [sure, setSure] = useState(false);
+  const session = useSession();
+  const [step, setStep] = useState<PayStep>('idle');
+  const [payErr, setPayErr] = useState<PayError | null>(null);
+  /** An order that was created but never paid (the confirm was closed, the app was switched...): finish it here. */
+  const finish = async () => {
+    if (!o) return;
+    if (!session.authed) { session.login(); return; }
+    setPayErr(null);
+    try { useApp.getState().upsertOrder(await retryOnServer(o, session, setStep)); setStep('done'); say('Paid. The stall has your order.'); }
+    catch (e) { setStep('failed'); setPayErr(e instanceof PayError ? e : new PayError((e as Error).message)); }
+  };
   /** Server orders: the API checks it's your order and the right step. Demo orders: local. */
   const act = async (a: 'arrived' | 'cancel', local: () => void, msg: string) => {
     if (!o) return;
@@ -123,8 +136,15 @@ export default function OrderDetail() {
             ) : (
               <>
                 <CheckCircle2 size={36} className={o.status === 'done' ? 'text-good' : 'text-mute'} />
-                <div className="text-lg font-bold">{o.status === 'done' ? 'Picked up' : o.status === 'paying' ? 'Waiting for payment' : 'Refunded'}</div>
+                <div className="text-lg font-bold">{o.status === 'done' ? 'Picked up' : o.status === 'paying' ? 'Not paid yet' : o.status === 'expired' ? 'Expired · not paid' : 'Refunded'}</div>
                 <div className="font-mono text-mute">{o.code}</div>
+                {o.status === 'paying' && o.server && (
+                  <div className="flex w-full flex-col gap-3">
+                    <p className="text-sm text-mute">Nothing was charged yet. Finish paying to send the order to the stall.</p>
+                    {step !== 'idle' && <PaySteps step={step} intent={null} error={payErr} plain />}
+                    <button onClick={() => void finish()} disabled={!['idle', 'failed'].includes(step)} className="btn-z w-full">{session.authed ? `Pay ${inr(o.inr)} now` : 'Sign in to pay'}</button>
+                  </div>
+                )}
               </>
             )}
           </div>
