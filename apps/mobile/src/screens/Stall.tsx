@@ -1,9 +1,9 @@
 import { BadgeCheck, ChevronLeft, Clock, MapPin, Navigation, Star } from 'lucide-react-native';
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ALERTS, CATEGORIES, ME, RAILS, VENDORS, distance, inr, km, UNITS } from '@zeeto/core';
+import { CATEGORIES, ME, VENDORS, distance, inr, km, UNITS } from '@zeeto/core';
 import { useNav } from '../nav';
-import { useApp, useBagCount } from '../store';
+import { MY_STALL, useApp, useBagCount } from '../store';
 import { C } from '../theme';
 import { Btn, Face, Label, Pic, Qty, s as ui } from '../ui';
 import { BagBar } from './Explore';
@@ -14,11 +14,12 @@ export default function Stall({ id }: { id: string }) {
   const v = VENDORS.find((x) => x.id === id) ?? VENDORS[0];
   const all = useApp((x) => x.products);
   const items = all.filter((p) => p.vendorId === v.id);
-  const alert = ALERTS.find((a) => a.vendorId === v.id);
+  const alert = useApp((x) => x.alerts.find((a) => a.vendorId === v.id));
   const following = useApp((x) => x.follows.includes(v.id));
   const follow = useApp((x) => x.follow);
   const bag = useApp((x) => x.bag);
   const setQty = useApp((x) => x.setQty);
+  const closed = useApp((x) => v.id === MY_STALL && !x.stallOpen);
   const count = useBagCount();
   const otherStall = bag.vendorId && bag.vendorId !== v.id ? VENDORS.find((x) => x.id === bag.vendorId) : null;
 
@@ -84,9 +85,6 @@ export default function Stall({ id }: { id: string }) {
             <Btn title="Directions" kind="line" onPress={directions} style={{ flex: 1, height: 44 }} right={<Navigation size={15} color={C.chalk} />} />
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
-            {v.rails.map((r) => <Text key={r} style={st.rail}>{RAILS[r].token} · {RAILS[r].network}</Text>)}
-          </View>
 
           {alert && (
             <View style={st.alert}>
@@ -104,7 +102,7 @@ export default function Stall({ id }: { id: string }) {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {items.map((p) => {
               const n = bag.vendorId === v.id ? bag.lines[p.id] ?? 0 : 0;
-              const out = p.stock <= 0;
+              const out = p.stock <= 0 || closed;
               return (
                 <View key={p.id} style={st.item}>
                   <Pic media={p.image} style={{ width: '100%', aspectRatio: 1, borderRadius: 16, opacity: out ? 0.4 : 1 }} />
@@ -112,7 +110,7 @@ export default function Stall({ id }: { id: string }) {
                   {p.local ? <Text style={st.local} numberOfLines={1}>{p.local}</Text> : null}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                     <Text style={st.price}>{inr(p.priceInr)}<Text style={st.unit}> /{UNITS[p.unit]}</Text></Text>
-                    {out ? <Text style={st.unit}>Sold out</Text> : <Qty n={n} onChange={(k) => change(p.id, Math.min(k, p.stock))} />}
+                    {out ? <Text style={st.unit}>{closed ? 'Closed' : 'Sold out'}</Text> : <Qty n={n} onChange={(k) => change(p.id, Math.min(k, p.stock))} />}
                   </View>
                 </View>
               );

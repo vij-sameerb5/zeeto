@@ -50,7 +50,16 @@ export const Face = ({ media, size = 48, ring }: { media: string; size?: number;
   );
 };
 
-export const Pic = ({ media, style }: { media: string; style?: StyleProp<any> }) => <Image source={img(media)} style={[{ backgroundColor: C.raised }, style]} resizeMode="cover" />;
+/**
+ * A photo that always fits its box. The box (width, height or aspectRatio, radius) is a View; the image fills it absolutely.
+ * On the new RN architecture an Image sized only by % / aspectRatio keeps the photo's own pixel size and spills out,
+ * which is what broke the product grid on stall pages.
+ */
+export const Pic = ({ media, style }: { media: string; style?: StyleProp<ViewStyle> }) => (
+  <View style={[{ backgroundColor: C.raised, overflow: 'hidden' }, style]}>
+    <Image source={img(media)} resizeMode="cover" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
+  </View>
+);
 
 export const Sim = () => (
   <View style={s.sim}><Text style={s.simT}>SIMULATED</Text></View>

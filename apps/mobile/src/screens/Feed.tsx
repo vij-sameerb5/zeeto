@@ -1,8 +1,8 @@
-import { BadgeCheck, Bookmark, Heart, MapPin, MessageCircle, ScanLine, Send, ShoppingBag, Store } from 'lucide-react-native';
+import { BadgeCheck, Bell, Bookmark, Heart, MapPin, MessageCircle, ScanLine, Send, ShoppingBag, Store, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Dimensions, FlatList, Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CATEGORIES, POSTS, STORIES, VENDORS, ago, inr, type Category, type Post, type Story } from '@zeeto/core';
+import { CATEGORIES, POSTS, VENDORS, ago, inr, type Category, type Post, type Story } from '@zeeto/core';
 import { img } from '../media';
 import { useNav } from '../nav';
 import { useApp, useBagCount } from '../store';
@@ -20,16 +20,23 @@ export default function Feed() {
   const follows = useApp((x) => x.follows);
   const [story, setStory] = useState<number | null>(null);
   const posts = [...POSTS].sort((a, b) => Number(follows.includes(b.vendorId)) - Number(follows.includes(a.vendorId)));
-  const stories = [...STORIES].sort((a, b) => Number(follows.includes(b.vendorId)) - Number(follows.includes(a.vendorId)));
+  const allStories = useApp((x) => x.stories);
+  const unread = useApp((x) => x.inbox.filter((i) => !i.read).length);
+  const [inbox, setInbox] = useState(false);
+  const stories = [...allStories].sort((a, b) => Number(follows.includes(b.vendorId)) - Number(follows.includes(a.vendorId)));
 
   const header = (
     <View>
       <View style={[st.row, { paddingTop: top + 8, paddingHorizontal: 16, paddingBottom: 12 }]}>
         <View style={{ flex: 1 }}>
           <Label>Pickup near</Label>
-          <View style={[st.row, { gap: 4, marginTop: 4 }]}><MapPin size={16} color={C.z} /><Text style={st.place}>Kalbadevi, Mumbai</Text></View>
+          <View style={[st.row, { gap: 4, marginTop: 4 }]}><MapPin size={16} color={C.z} /><Text style={st.place} numberOfLines={1}>Kalbadevi</Text></View>
         </View>
         <Pressable onPress={() => nav.push({ name: 'scan' })} style={[st.iconBtn, { backgroundColor: C.z, borderColor: C.z }]} accessibilityLabel="Scan to pay"><ScanLine size={19} color={C.ink} /></Pressable>
+        <Pressable onPress={() => setInbox(true)} style={st.iconBtn} accessibilityLabel="Notifications">
+          <Bell size={19} color={C.chalk} />
+          {unread > 0 && <View style={st.badge}><Text style={st.badgeT}>{unread}</Text></View>}
+        </Pressable>
         <Pressable onPress={() => nav.push({ name: 'sell' })} style={st.iconBtn} accessibilityLabel="Seller mode"><Store size={19} color={C.chalk} /></Pressable>
         <Pressable onPress={() => nav.push({ name: 'bag' })} style={st.iconBtn} accessibilityLabel="Bag">
           <ShoppingBag size={19} color={C.chalk} />
@@ -38,7 +45,7 @@ export default function Feed() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingHorizontal: 16, paddingBottom: 14 }}>
-        {stories.map((s, i) => (
+        {stories.map((s, i) => (i === stories.findIndex((x) => x.vendorId === s.vendorId) &&
           <Pressable key={s.id} onPress={() => setStory(i)} style={{ alignItems: 'center', width: 70, gap: 6 }}>
             <Face media={vendor(s.vendorId).avatar} size={66} ring />
             <Text numberOfLines={1} style={{ color: C.mute, fontSize: 11 }}>{vendor(s.vendorId).name.split(' ')[0]}</Text>
@@ -74,6 +81,7 @@ export default function Feed() {
         removeClippedSubviews
       />
       {story !== null && <StoryViewer list={stories} start={story} onClose={() => setStory(null)} />}
+      <Inbox open={inbox} onClose={() => setInbox(false)} />
     </>
   );
 }
@@ -180,6 +188,7 @@ function StoryViewer({ list, start, onClose }: { list: Story[]; start: number; o
 }
 
 const st = StyleSheet.create({
+  note: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: 18, borderWidth: 1, borderColor: C.line, backgroundColor: C.panel },
   row: { flexDirection: 'row', alignItems: 'center' },
   place: { color: C.chalk, fontWeight: '800', fontSize: 18 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: C.line2, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
@@ -191,3 +200,38 @@ const st = StyleSheet.create({
   tag: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, overflow: 'hidden' },
   shop: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 6, paddingRight: 12, borderRadius: 14, backgroundColor: C.panel, borderWidth: 1, borderColor: C.line, maxWidth: 220 },
 });
+
+
+/** Offers and order updates from stalls you follow. */
+function Inbox({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const nav = useNav();
+  const items = useApp((x) => x.inbox);
+  const read = useApp((x) => x.readInbox);
+  const top = useSafeAreaInsets().top;
+  return (
+    <Modal visible={open} animationType="slide" onRequestClose={onClose} onShow={read}>
+      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: top + 8 }}>
+        <View style={[st.row, { paddingHorizontal: 16, paddingBottom: 12 }]}>
+          <Text style={{ color: C.chalk, fontSize: 22, fontWeight: '800', flex: 1 }}>Notifications</Text>
+          <Pressable onPress={onClose} style={st.iconBtn} accessibilityLabel="Close"><X size={19} color={C.chalk} /></Pressable>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+          {!items.length && <Text style={{ color: C.mute, textAlign: 'center', marginTop: 40 }}>Follow stalls to hear about fresh stock and offers.</Text>}
+          {items.map((i) => {
+            const v = vendor(i.vendorId);
+            return (
+              <Pressable key={i.id} onPress={() => { onClose(); nav.push({ name: 'stall', id: i.vendorId }); }} style={[st.note, !i.read && { borderColor: C.z }]}>
+                <Face media={v.avatar} size={42} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: C.mute, fontSize: 12 }}>{v.name} · {ago(i.at)}{i.kind === 'order' ? ' · order' : ''}</Text>
+                  <Text style={{ color: C.chalk, fontWeight: '700' }}>{i.title}</Text>
+                  <Text style={{ color: C.mute, fontSize: 13 }}>{i.body}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}

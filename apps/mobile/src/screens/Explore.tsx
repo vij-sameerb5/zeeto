@@ -1,4 +1,5 @@
-import { BadgeCheck, List, Map as MapIcon, Search, Star } from 'lucide-react-native';
+import { BadgeCheck, List, LocateFixed, Map as MapIcon, Search, Star } from 'lucide-react-native';
+import * as Location from 'expo-location';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
@@ -21,6 +22,22 @@ export default function Explore() {
   const follows = useApp((x) => x.follows);
   const products = useApp((x) => x.products);
   const bag = useBagCount();
+  // Where "you" are: the phone's real location when allowed, else the demo spot in Kalbadevi.
+  const [here, setHere] = useState(ME.home);
+  const [where, setWhere] = useState('Kalbadevi · Mumbai');
+  const locate = async () => {
+    try {
+      const p = await Location.requestForegroundPermissionsAsync();
+      if (!p.granted) { setWhere('Location off · showing Kalbadevi'); return; }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // The demo market is in Kalbadevi; if you're far away, keep showing it but say how far.
+      const far = km(me, CENTER);
+      if (far > 25) { setWhere(`You’re ${Math.round(far)} km from the demo market`); return; }
+      setHere(me);
+      setWhere('Near you');
+    } catch { setWhere('Couldn’t get your location · showing Kalbadevi'); }
+  };
 
   // Custom marker views must re-render until their photo is drawn, then stop for performance.
   useEffect(() => { const t = setTimeout(() => setPinsReady(true), 1200); return () => clearTimeout(t); }, []);
@@ -30,17 +47,18 @@ export default function Explore() {
     return VENDORS.filter((v) =>
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t))),
-    ).sort((a, b) => km(ME.home, a.location) - km(ME.home, b.location));
-  }, [group, q, products]);
+    ).sort((a, b) => km(here, a.location) - km(here, b.location));
+  }, [group, q, products, here]);
   const peek = shown.find((v) => v.id === sel);
 
   const header = (
     <View style={{ gap: 12 }}>
       <View style={st.row}>
         <View>
-          <Label>Kalbadevi · Mumbai</Label>
+          <Label>{where}</Label>
           <Text style={st.h1}>{shown.length} stalls near you</Text>
         </View>
+        <Pressable onPress={locate} style={[ui.round, { marginLeft: 'auto', marginRight: 8 }]} accessibilityLabel="Use my location"><LocateFixed size={18} color={C.z} /></Pressable>
         <Pressable onPress={() => setView(view === 'map' ? 'list' : 'map')} style={ui.round} accessibilityLabel={view === 'map' ? 'Show list' : 'Show map'}>
           {view === 'map' ? <List size={18} color={C.chalk} /> : <MapIcon size={18} color={C.chalk} />}
         </Pressable>
@@ -68,7 +86,7 @@ export default function Explore() {
             showsPointsOfInterests={false}
             toolbarEnabled={false}
           >
-            <Marker coordinate={{ latitude: ME.home.lat, longitude: ME.home.lng }} title="You" tracksViewChanges={false}>
+            <Marker coordinate={{ latitude: here.lat, longitude: here.lng }} title="You" tracksViewChanges={false}>
               <View style={st.me} />
             </Marker>
             {shown.map((v) => {

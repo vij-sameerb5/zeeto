@@ -20,7 +20,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0A0A0A"
-      }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       [
@@ -36,6 +40,12 @@
         {
           "cameraPermission": "Zeeto uses the camera to scan a stall\u2019s payment QR.",
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Zeeto shows stalls near you."
         }
       ]
     ]
