@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Thanks · Anna's Chai Co.</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;background:#f7f1e8;color:#2a1d12;display:grid;place-items:center;min-height:100vh;margin:0}.card{background:#fff;border-radius:20px;padding:28px;width:min(360px,92vw)}</style></head>
+<body><div class="card"><h1>Thank you!</h1><p id="s">Checking your payment…</p></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  fetch('/api/status?session=' + encodeURIComponent(q.get('zeeto_session') || '')).then((r) => r.json()).then((s) => {
+    document.getElementById('s').innerHTML = s.status === 'paid'
+      ? 'Paid ₹' + s.amountInr + '. Show order <b>' + s.reference + '</b> at the counter. <a target="_blank" href="' + s.order.explorerUrl + '">Receipt</a>'
+      : 'We haven’t seen the payment yet (' + s.status + ').';
+  });
+</script></body></html>

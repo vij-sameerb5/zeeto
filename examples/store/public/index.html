@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anna's Chai Co.</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; background: #f7f1e8; color: #2a1d12; margin: 0; display: grid; place-items: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 20px; padding: 28px; width: min(360px, 92vw); box-shadow: 0 10px 40px #0001; }
+    h1 { margin: 0 0 4px; font-size: 22px; } .muted { color: #8a7a6a; font-size: 14px; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; } .total { font-weight: 700; border-top: 1px solid #eee; padding-top: 10px; }
+    button { width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 14px; background: #ff7a1a; color: #1a0b00; font-weight: 700; font-size: 16px; cursor: pointer; }
+    #msg { margin-top: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Anna's Chai Co.</h1>
+    <p class="muted">Order online, pick up at the counter.</p>
+    <div class="row"><span>Masala chai × 2</span><span>₹60</span></div>
+    <div class="row"><span>Bun maska</span><span>₹40</span></div>
+    <div class="row total"><span>Total</span><span>₹100</span></div>
+    <button id="pay"></button>
+    <div id="msg" class="muted"></div>
+  </div>
+
+  <!-- Zeeto Checkout: the script, one button, one callback -->
+  <script src="%ZEETO_URL%/checkout.js"></script>
+  <script>
+    let session;
+    Zeeto.button('#pay', {
+      label: 'Pay ₹100 with Zeeto',
+      createSession: () => fetch('/api/pay', { method: 'POST' }).then((r) => r.json()).then((s) => { session = s.session; return s; }),
+      onPaid: async () => {
+        const s = await fetch('/api/status?session=' + session).then((r) => r.json()); // confirm on the server
+        document.getElementById('msg').innerHTML = s.status === 'paid'
+          ? '✅ Paid. <a target="_blank" href="' + s.order.explorerUrl + '">Receipt</a>' : 'Payment pending…';
+      },
+      onClose: () => (document.getElementById('msg').textContent = 'Checkout closed.'),
+    });
+  </script>
+</body>
+</html>
