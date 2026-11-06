@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zeeto System Map</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -284,6 +283,7 @@ code.ic { font-family: var(--mono); color: var(--z); font-size: 12px; }
 .ways .way:first-child p { flex: 1; } .ways .way:first-child small { margin-top: 0; }
 @media (max-width: 900px) { .ctr { grid-template-columns: 1fr; } .ctr .cs::after { display: none; } .ways .way:first-child { flex-direction: column; align-items: flex-start; } }
 
+#gasfree ul.plain b { display: inline; }
 footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
 
 @media (max-width: 900px) {
@@ -301,24 +301,80 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
   <header class="hero">
     <div class="brand">
       <div class="mark"><svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 12h36v8L26 44h24v8H14v-8l24-24H14z" fill="#1A0B00"/></svg></div>
-      <span class="eyebrow">ETHGlobal Mumbai · system map · Nov 5</span>
+      <span class="eyebrow">ETHGlobal Mumbai · system map · Nov 6 · Whitechain Operate track</span>
     </div>
     <div class="word">zeeto<i>.</i></div>
-    <p>Every street stall in Kalbadevi on one map. Customers order for pickup and pay in USDT. Stalls run their shop from a photo, a WhatsApp message or the dashboard. This page shows how the pieces connect and what is real tonight.</p>
+    <p>Gas-free USDT checkout for street stalls and small shops on Whitechain. A customer signs in with a phone number and pays in rupees: no wallet, seed phrase, token, chain or gas fee in sight. The stall gets USDT in its own wallet in seconds, with an onchain receipt, one-tap refunds, an accountant export and a drop-in API for its website.</p>
     <div class="legend"><span class="chip built">Built</span> works now with demo data <span class="chip mock">Mocked</span> real screens, fake service <span class="chip key">Needs keys</span> waiting on accounts / API keys</div>
-<nav class="toc" aria-label="On this page"><a href="#workflow">Whole workflow</a><a href="#counter">At the counter</a><a href="#ways-in">Ways in</a><a href="#kinds">Every kind of shop</a><a href="#arch">Architecture</a><a href="#pay">Payment</a><a href="#wa">WhatsApp</a><a href="#status">Status</a></nav>
+<nav class="toc" aria-label="On this page"><a href="#gasfree">Gas-free checkout</a><a href="#workflow">Whole workflow</a><a href="#counter">At the counter</a><a href="#ways-in">Ways in</a><a href="#kinds">Every kind of shop</a><a href="#arch">Architecture</a><a href="#pay">Payment</a><a href="#wa">WhatsApp</a><a href="#status">Status</a></nav>
   </header>
 
   <section>
     <div><div class="eyebrow z">The one journey</div><h2>One vendor, one customer, one real USDT payment</h2>
     <p class="lede">This is the demo. Everything else supports it.</p></div>
     <div class="journey">
-      <div class="step"><span class="n">1</span><b>Stall lists stock</b><span>Photo, voice or text (“20 kg tamatar”, “screen repair ₹1,800”) → AI draft → stall confirms</span><span class="tag">0G</span></div>
-      <div class="step"><span class="n">2</span><b>Listing goes public</b><span>Vendor profile + listing written to Arkiv, read back by the app</span><span class="tag">Arkiv</span></div>
-      <div class="step"><span class="n">3</span><b>Customer finds it</b><span>Map, search, stall page, adds to bag</span><span class="tag">Mapbox</span></div>
-      <div class="step hot"><span class="n">4</span><b>Pays in USDT</b><span>Embedded wallet signs approve + pay. No MetaMask.</span><span class="tag">Whitechain · Privy</span></div>
-      <div class="step"><span class="n">5</span><b>API verifies onchain</b><span>Reads the Paid event, then the stall sees the order</span><span class="tag">Whitechain</span></div>
-      <div class="step"><span class="n">6</span><b>Pickup code</b><span>Stall types the customer’s code → done, points earned</span><span class="tag">—</span></div>
+      <div class="step"><span class="n">1</span><b>Stall goes live</b><span>Phone/email sign-in, shop, location. Payouts to its own embedded wallet.</span><span class="tag">Privy</span></div>
+      <div class="step"><span class="n">2</span><b>Customer finds it</b><span>Map, stall page, WhatsApp link, shop QR, or a store's "Pay with Zeeto"</span><span class="tag">Mapbox · WhatsApp</span></div>
+      <div class="step"><span class="n">3</span><b>Server prices it</b><span>Prices from the database, order + EIP-3009 intent with the stall bound in</span><span class="tag">Zeeto API</span></div>
+      <div class="step hot"><span class="n">4</span><b>"Pay ₹120"</b><span>Embedded wallet signs silently. No gas, no pop-up.</span><span class="tag">Privy</span></div>
+      <div class="step hot"><span class="n">5</span><b>Relayer settles</b><span>ZeetoCheckout pulls USDT, forwards 100% to the stall, emits Paid. Business pays gas.</span><span class="tag">Whitechain</span></div>
+      <div class="step"><span class="n">6</span><b>Everyone knows</b><span>Stall dings, WhatsApp to both, signed webhook to the store, public receipt</span><span class="tag">API · webhooks</span></div>
+    </div>
+  </section>
+
+  <section id="gasfree">
+    <div><div class="eyebrow z">Built · Nov 6</div><h2>Gas-free checkout, end to end</h2>
+    <p class="lede">The payer never holds WBT, writes a seed phrase or picks a chain. They sign one off-chain approval; Zeeto's relayer submits it through the ZeetoCheckout contract and pays the gas for the business. Proven against the live Whitechain USDT on a fork: a real payment and refund settled with exactly these signatures.</p></div>
+    <div class="ctr">
+      <div class="cs"><span class="cn">1</span><b>Order + intent</b><p>Server prices it and returns a USDT <b>ReceiveWithAuthorization</b>: from the customer, to ZeetoCheckout, exact amount, 10-minute window, nonce = <code class="ic">payNonce(order, stall)</code>.</p></div>
+      <div class="cs hot"><span class="cn">2</span><b>Customer signs</b><p>Embedded wallet, wallet pop-ups off. The screen says <b>Pay ₹120</b>. Nothing costs gas.</p></div>
+      <div class="cs"><span class="cn">3</span><b>Checks before gas</b><p>Signer, amount, nonce, window, unused, balance, limits, then a simulation. Fails cost nothing.</p></div>
+      <div class="cs ok"><span class="cn">4</span><b>Relayer → contract</b><p><code class="ic">ZeetoCheckout.pay</code> pulls the USDT and forwards all of it to the stall, emits <b>Paid</b>. The server only marks paid after reading that event.</p></div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="eyebrow z">Who pays gas, and why it can't be drained</div>
+        <h3>The business covers it, with hard limits</h3>
+        <ul class="plain">
+          <li><b>Business-paid.</b> Every relayed payment and refund is logged with its gas and stall: shown on the merchant's Developers page and in the accountant CSV. Testnet: topped up from the faucet. Production: billed per payment.</li>
+          <li><b>Only its own intents.</b> The relayer submits only approvals the server issued, for orders it created, signed by that order's customer (or the stall, for refunds).</li>
+          <li><b>Limits.</b> Min ₹10 · 25 per customer/day · 500 per stall/day · 0.5 WBT/day budget · gas-price ceiling. Holds WBT only, never USDT.</li>
+          <li><b>Worst case = one day's budget.</b> Then customers fall back to submitting the same signature themselves. Admin shows balance, low-balance alert and every relayed tx.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="eyebrow z">ZeetoCheckout · Whitechain Sepolia</div>
+        <h3>Small contract, strong rules</h3>
+        <ul class="plain">
+          <li><b>Stall bound in the signature</b> (nonce = order + stall): a relayer can't redirect money or reuse a signature.</li>
+          <li><b>One payment per (order, payer)</b>: front-running with your own money can't block someone's order.</li>
+          <li><b>Refunds</b> signed by the stall, only to the original payer, capped at what was paid, unique nonce each.</li>
+          <li><b>receiveWithAuthorization</b>: only the payee contract can use the signature, so the mempool can't front-run it into a plain transfer.</li>
+          <li><b>No custody</b>, no withdraw. Owner can pause new payments only; refunds always work. 15 unit tests + live-USDT fork test.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="eyebrow z">Drop-in for any store</div>
+        <h3>Checkout API + checkout.js, about 20 lines</h3>
+        <ul class="plain">
+          <li><b>POST /api/checkout</b> with the stall's secret key → session URL. <b>GET</b> it back for status, payer, tx and explorer link.</li>
+          <li><b>checkout.js</b>: <code class="ic">Zeeto.button('#pay', { createSession, onPaid })</code> opens the hosted page in a popup.</li>
+          <li><b>Signed webhooks</b>: payment.succeeded / payment.refunded with <code class="ic">Zeeto-Signature</code> (HMAC). Keys shown once, stored hashed.</li>
+          <li><b>examples/store</b>: a chai shop's own website taking Zeeto payments.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="eyebrow z">After the first payment</div>
+        <h3>What a real merchant needs next</h3>
+        <ul class="plain">
+          <li><b>One-tap refunds</b>, partial or full, with a reason the customer sees and a public receipt.</li>
+          <li><b>Accountant CSV</b>: order, customer, ₹, USDT, receipt URL, refunds and their txs, gas covered, order reference.</li>
+          <li><b>Orders</b>: accept → packed → hand over (name + spoken code), cancel-before-accept, "I'm at the stall".</li>
+          <li><b>WhatsApp</b>: "pay ravi 120" → Pay button; stalls run orders by text; both sides get updates.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -333,58 +389,58 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
         <div class="c">Phone + OTP, shop name, category, location, hours on <code>/join</code> or the app</div>
         <div class="c dim">—</div>
         <div class="c">Creates user + vendor (status <code>draft → live</code>), shop QR, links WhatsApp number</div>
-        <div class="c"><i class="t pv">Privy</i> embedded wallet for the stall · <i class="t pg">Postgres</i> vendor row with PostGIS point · <i class="t ar">Arkiv</i> public profile</div>
+        <div class="c"><i class="t pv">Privy</i> embedded wallet for the stall · <i class="t pg">Postgres</i> vendor row with PostGIS point · <i class="t wc">Whitechain</i> payout wallet = their own</div>
 
         <div class="ph"><span>2</span><b>Stock goes up</b><small>every morning</small></div>
         <div class="c">Photo, voice note or text, in the app <em>or</em> on WhatsApp → checks the AI draft → <b>Publish</b></div>
         <div class="c dim">Followers get “Fresh tomatoes just landed” with an <b>Order now</b> button</div>
         <div class="c">Validates price and quantity limits, saves products + stock, sends follower alerts</div>
-        <div class="c"><i class="t zg">0G</i> reads the photo / message (request id logged) · <i class="t ar">Arkiv</i> listing + announcement · <i class="t wa">WhatsApp</i> alert template</div>
+        <div class="c"><i class="t zg">Gemini</i> reads the photo (server-side key) · <i class="t wa">WhatsApp</i> alert</div>
 
         <div class="ph"><span>3</span><b>Customer finds it</b><small>six ways in</small></div>
         <div class="c dim">—</div>
         <div class="c">Map / search in the app, stall page, story, fresh-stock alert, WhatsApp chat, shop QR, or the stall bills them (see “Ways in”)</div>
         <div class="c">Nearby query, stall + products for the chat or the app</div>
-        <div class="c"><i class="t pg">PostGIS</i> nearby stalls · <i class="t ar">Arkiv</i> public listings read back (badge in UI) · <i class="t mb">Mapbox</i> map</div>
+        <div class="c"><i class="t pg">Postgres</i> stalls + products · <i class="t mb">Mapbox</i> map</div>
 
         <div class="ph"><span>4</span><b>Order</b><small>pickup only</small></div>
         <div class="c dim">—</div>
         <div class="c">Bag in the app, or “2 kg tomatoes, 1 palak” in WhatsApp, or a bill from the stall</div>
-        <div class="c">Order <code>pending_payment</code>; prices it in USDT; makes <code>orderRef</code>; <b>signs a payment intent</b> (15 min)</div>
+        <div class="c">Order <code>paying</code>; prices it from the DB; makes <code>orderRef</code>; returns a gas-free <b>EIP-3009 intent</b> (10 min)</div>
         <div class="c"><i class="t pg">Postgres</i> order + items (price snapshot)</div>
 
         <div class="ph lock"><span>5</span><b>Pay 🔒</b><small>~20 seconds</small></div>
         <div class="c dim">—</div>
         <div class="c">Taps <b>Pay 0.90 USDT</b> (app button or WhatsApp link) → Zeeto pay page → OTP if needed → <b>Confirm</b></div>
         <div class="c">Hands the signed intent to the wallet; never touches the money</div>
-        <div class="c"><i class="t pv">Privy</i> wallet signs approve + <code>pay()</code> · <i class="t wc">Whitechain</i> StreetPayCheckout moves USDT customer → stall, emits <code>Paid</code></div>
+        <div class="c"><i class="t pv">Privy</i> wallet signs off-chain (no gas) · relayer → <i class="t wc">Whitechain</i> ZeetoCheckout moves USDT customer → stall, emits <code>Paid</code></div>
 
         <div class="ph"><span>6</span><b>Verify</b><small>seconds</small></div>
         <div class="c">Order appears only now: app alert + WhatsApp “New paid order”</div>
-        <div class="c">Gets pickup code + QR, in the app and in WhatsApp, with the tx link</div>
+        <div class="c">Gets “Paid”, their spoken pickup code (e.g. NT-576) and a public receipt, in the app and on WhatsApp</div>
         <div class="c">Reads the receipt (chain, contract, token, ref, stall, amount). Watcher catches it if the tab closed. Marks <code>paid</code></div>
         <div class="c"><i class="t wc">Whitechain</i> receipt + logs · <i class="t pg">Postgres</i> payment row, unique <code>order_ref</code> / tx hash</div>
 
         <div class="ph"><span>7</span><b>Prepare</b></div>
-        <div class="c"><b>Accept</b> → pack → <b>Ready</b> (app button or reply READY 1024). Or <b>Reject</b> → refund 🔒</div>
-        <div class="c">“Accepted”, then “Ready! Show TH-595” with directions</div>
+        <div class="c">Taps <b>Accept</b> → packs → taps <b>Packed</b> (or texts <code>ready NT-576</code>). Or <b>Reject</b> → full refund, gas-free</div>
+        <div class="c">Gets “Accepted”, then “Ready: say your name and code NT-576”, with directions</div>
         <div class="c">Moves the order through <code>accepted → ready</code>, notifies both sides</div>
         <div class="c"><i class="t wa">WhatsApp</i> + push notifications</div>
 
         <div class="ph"><span>8</span><b>Pickup</b></div>
-        <div class="c">Types the code the customer shows (5 tries) → <b>Hand over</b></div>
-        <div class="c">Shows code / QR at the stall, takes the bag</div>
-        <div class="c">Checks the code hash, marks <code>done</code>, awards points (₹10 = 1)</div>
-        <div class="c"><i class="t pg">Postgres</i> rewards ledger</div>
+        <div class="c">Customer says name + code; it’s on the stall’s screen too → one tap <b>Hand over</b>. Sees “Visit 4 · Regular”</div>
+        <div class="c">Taps “I’m at the stall”, says name + code, takes the bag</div>
+        <div class="c">Marks <code>done</code>; points go on <b>that stall’s</b> loyalty card (₹10 = 1, spend only there); visit counted</div>
+        <div class="c"><i class="t pg">Postgres</i> per-stall points + visits</div>
 
         <div class="ph lock"><span>9</span><b>After</b></div>
         <div class="c">Refunds from the app with their wallet 🔒 · Payments tab + CSV · 9:30 PM daily summary on WhatsApp</div>
-        <div class="c">Receipt history in Wallet, points to spend at stalls</div>
+        <div class="c">Receipt + wallet-style pass (Apple Wallet: coming soon); one loyalty card per stall</div>
         <div class="c">Refund intent, insights from real sales (AI suggestions are labelled)</div>
-        <div class="c"><i class="t wc">Whitechain</i> <code>refund()</code> capped at what was paid · <i class="t zg">0G</i> summary text</div>
+        <div class="c"><i class="t wc">Whitechain</i> gas-free <code>refund()</code> capped at what was paid · CSV with receipts + gas</div>
       </div>
     </div>
-    <div class="legend"><i class="t pg">Postgres</i> private source of truth <i class="t ar">Arkiv</i> public data <i class="t wc">Whitechain</i> money <i class="t pv">Privy</i> login + wallet <i class="t zg">0G</i> AI <i class="t wa">WhatsApp</i> messages <i class="t mb">Mapbox</i> map</div>
+    <div class="legend"><i class="t pg">Postgres</i> private source of truth <i class="t wc">Whitechain</i> money <i class="t pv">Privy</i> login + wallet <i class="t zg">Gemini</i> AI <i class="t wa">WhatsApp</i> messages <i class="t mb">Mapbox</i> map</div>
   </section>
 
   <section id="counter">
@@ -435,7 +491,7 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
       <div class="fn-arrow">→</div>
       <div class="fn-box"><b>Zeeto pay page</b><small>zeeto.app/pay/&lt;order&gt; · one order · 15 min · login bound to the phone number</small></div>
       <div class="fn-arrow">→</div>
-      <div class="fn-box"><b>Wallet signs</b><small>approve + pay(intent, signature) on Whitechain</small></div>
+      <div class="fn-box"><b>Wallet signs</b><small>one gas-free signature → relayer → ZeetoCheckout</small></div>
       <div class="fn-arrow">→</div>
       <div class="fn-box ok"><b>Receipt everywhere</b><small>app + WhatsApp: pickup code, tx link</small></div>
     </div>
@@ -496,7 +552,7 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
 
   <section id="arch">
     <div><div class="eyebrow z">Architecture</div><h2>Three doors, one backend</h2>
-    <p class="lede">Customers, stalls and the WhatsApp assistant all talk to the same API. The API is the only thing that touches the database, the chain readers and the AI.</p></div>
+    <p class="lede">Customers, stalls, stores and WhatsApp all talk to the same API. The API is the only thing that touches the database, the relayer and the AI.</p></div>
     <div class="arch">
       <div class="tier">
         <div class="tier-h"><h3>Front doors</h3><span class="eyebrow">apps/web · apps/mobile</span></div>
@@ -504,25 +560,25 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
           <div class="box"><b>Customer web (PWA)</b><small>Explore map, stall, bag + pay, pickup QR, feed, rewards, wallet</small><span class="chip built">Built</span></div>
           <div class="box"><b>Mobile app (Expo)</b><small>Same customer flow + seller mode on the phone</small><span class="chip built">Built</span></div>
           <div class="box"><b>Merchant dashboard</b><small>Overview, Orders, Products + Snap &amp; Sell, Payments, Store + QR, onboarding</small><span class="chip built">Built</span></div>
-          <div class="box"><b>WhatsApp assistant</b><small>Stock by message, order alerts, photo listings</small><span class="chip key">Needs keys</span></div>
+          <div class="box"><b>WhatsApp (Cloud API)</b><small>"pay ravi 120" → Pay button · stall commands · order updates</small><span class="chip built">Built · needs Meta keys</span></div><div class="box"><b>Stores (Checkout API)</b><small>checkout.js + secret keys + signed webhooks</small><span class="chip built">Built</span></div>
         </div>
       </div>
       <div class="down"><span>REST + Privy token</span><span>Meta webhook</span></div>
       <div class="tier api">
-        <div class="tier-h"><h3>Zeeto API · Node + Express + TypeScript</h3><span class="chip key">Next, after keys</span></div>
-        <div class="mods"><span>auth</span><span>vendors</span><span>products</span><span>inventory</span><span>orders</span><span>payments</span><span>rewards</span><span>ai</span><span>whatsapp</span><span>arkiv</span></div>
-        <small style="color:var(--mute)">Today the apps call the same interfaces through mock services in <code style="font-family:var(--mono);color:var(--z)">packages/core</code>, each labelled “Simulated” on screen. Swapping a mock for the real service changes no screen.</small>
+        <div class="tier-h"><h3>Zeeto API · Vercel functions + TypeScript</h3><span class="chip built">Built · needs keys to run</span></div>
+        <div class="mods"><span>health</span><span>stalls</span><span>products</span><span>orders</span><span>requests</span><span>checkout</span><span>admin</span><span>ai</span><span>uniswap</span><span>whatsapp</span><span>relayer</span><span>webhooks</span></div>
+        <small style="color:var(--mute)">When the API is reachable the apps use it (real stalls, orders, payments). Without it they fall back to the demo data, labelled “Simulated”, so nothing breaks.</small>
       </div>
       <div class="down"><span>SQL</span><span>RPC / logs</span><span>SDK</span><span>HTTPS</span></div>
       <div class="tier">
         <div class="tier-h"><h3>Data, chain and AI</h3><span class="eyebrow">private vs public</span></div>
         <div class="boxes six">
-          <div class="box"><b>Supabase Postgres + PostGIS</b><small>Source of truth: people, orders, payments, stock. Private.</small><span class="chip key">Needs keys</span></div>
-          <div class="box"><b>StreetPayCheckout</b><small>USDT checkout on Whitechain Sepolia (1874). Signed intents, one payment per order, capped refunds. 17 tests pass.</small><span class="chip built">Built · not deployed</span></div>
-          <div class="box"><b>Arkiv</b><small>Public copy: vendor profiles, listings, announcements. No personal data.</small><span class="chip key">Needs keys</span></div>
-          <div class="box"><b>0G inference</b><small>Photo → listing, message → stock command. Real request IDs logged.</small><span class="chip mock">Mocked</span></div>
-          <div class="box"><b>Privy</b><small>Phone login + embedded wallet. Holds the keys, never us.</small><span class="chip key">Needs keys</span></div>
-          <div class="box"><b>Mapbox</b><small>Real map tiles. Offline street map is the fallback.</small><span class="chip key">Needs keys</span></div>
+          <div class="box"><b>Supabase Postgres</b><small>Source of truth: users, stalls, products, orders, bills, relay log, webhook log. RLS on, API-only.</small><span class="chip built">Schema ready · run it</span></div>
+          <div class="box"><b>ZeetoCheckout</b><small>Gas-free USDT checkout on Whitechain Sepolia (1874). Stall bound in the signature, capped refunds, no custody. 16 tests incl. live-USDT fork.</small><span class="chip built">Built · deploy + verify</span></div>
+          <div class="box"><b>Relayer</b><small>Pays WBT gas for payments and refunds. Limits + daily budget. Holds no USDT.</small><span class="chip built">Built · fund with WBT</span></div>
+          <div class="box"><b>Gemini</b><small>Snap &amp; Sell: photo → listings + note in Hindi, Marathi, Gujarati. Key on the server.</small><span class="chip built">Built · needs key</span></div>
+          <div class="box"><b>Privy</b><small>Phone/email login + embedded wallet, no wallet pop-ups. Holds the keys, never us.</small><span class="chip built">Live</span></div>
+          <div class="box"><b>Mapbox · Uniswap</b><small>Real map tiles · ETH→USDC quotes and swaps on Unichain Sepolia (UniswapX is mainnet-only).</small><span class="chip built">Map live · Uniswap needs key</span></div>
         </div>
       </div>
     </div>
@@ -530,18 +586,18 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
 
   <section id="pay">
     <div><div class="eyebrow z">Payment, step by step</div><h2>How a USDT payment becomes a paid order</h2>
-    <p class="lede">The order turns “paid” only when step 7 succeeds. The browser saying “done” never counts.</p></div>
+    <p class="lede">The order turns “paid” only when step 7 succeeds. The browser saying “done” never counts. If the relayer is off, step 5 is sent from the customer’s own wallet; nothing else changes.</p></div>
     <div class="seq-scroll" role="region" aria-label="Payment sequence" tabindex="0">
       <div class="seq">
-        <div class="lane-h">#</div><div class="lane-h">Customer app</div><div class="lane-h">Zeeto API</div><div class="lane-h">Customer wallet (Privy)</div><div class="lane-h">StreetPayCheckout</div><div class="lane-h">Stall</div>
-        <div class="num">1</div><div class="cell"><div class="msg">Checkout: bag → order</div></div><div class="cell"><div class="msg">Order saved as <code>pending_payment</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-        <div class="num">2</div><div class="cell"></div><div class="cell"><div class="msg z">Prices in USDT, makes <code>orderRef</code>, signs intent (EIP-712, 15 min)</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-        <div class="num">3</div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="msg">approve(contract, amount) once</div></div><div class="cell"></div><div class="cell"></div>
-        <div class="num">4</div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg z">pay(intent, signature) → checks payer, expiry, signer, not paid before</div></div><div class="cell"></div>
-        <div class="num">5</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg g">USDT moves customer → stall wallet. Event <code>Paid</code></div></div>
-        <div class="num">6</div><div class="cell span2"><div class="msg">App sends tx hash to API</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
-        <div class="num">7</div><div class="cell"></div><div class="cell span3"><div class="msg z">API reads the receipt: right chain, contract, token, orderRef, stall, amount. Log watcher catches it too if the tab closed.</div></div><div class="cell"></div>
-        <div class="num">8</div><div class="cell"><div class="msg g">Pickup code + QR</div></div><div class="cell"><div class="msg">Order <code>paid</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="msg g">New paid order (app + WhatsApp)</div></div>
+        <div class="lane-h">#</div><div class="lane-h">Customer app</div><div class="lane-h">Zeeto API</div><div class="lane-h">Relayer</div><div class="lane-h">ZeetoCheckout + USDT</div><div class="lane-h">Stall / store</div>
+        <div class="num">1</div><div class="cell"><div class="msg">"Pay ₹120" (bag, QR, bill, WhatsApp link or store popup)</div></div><div class="cell"><div class="msg">Prices from DB, order <code>paying</code>, <code>orderRef</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">2</div><div class="cell"></div><div class="cell"><div class="msg z">Intent: ReceiveWithAuthorization, to = checkout, nonce = <code>payNonce(ref, stall)</code></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">3</div><div class="cell"><div class="msg g">Embedded wallet signs silently: no gas</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">4</div><div class="cell"></div><div class="cell"><div class="msg z">Verify signer, amount, nonce, window, unused, balance, limits</div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="num">5</div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg z">simulate → <code>pay(ref, payer, stall, amount, sig)</code>, relayer pays WBT</div></div><div class="cell"></div>
+        <div class="num">6</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell span2"><div class="msg g">USDT customer → checkout → 100% to stall. Event <code>Paid</code></div></div>
+        <div class="num">7</div><div class="cell"></div><div class="cell span3"><div class="msg z">API reads the receipt, requires the matching Paid event, marks paid in one conditional update, logs gas</div></div><div class="cell"></div>
+        <div class="num">8</div><div class="cell"><div class="msg g">"Paid" + spoken pickup code + public receipt</div></div><div class="cell"><div class="msg">WhatsApp both sides</div></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="msg g">Order appears · webhook payment.succeeded</div></div>
       </div>
     </div>
   </section>
@@ -553,9 +609,9 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
       <div class="st on">Paid<small>verified onchain</small></div><span class="arrow">→</span>
       <div class="st">Accepted<small>stall packing</small></div><span class="arrow">→</span>
       <div class="st">Ready<small>customer notified</small></div><span class="arrow">→</span>
-      <div class="st">Picked up<small>code matched, points</small></div>
+      <div class="st">Picked up<small>name + code, points</small></div>
     </div>
-    <div class="branch">Paid → <b style="color:var(--chalk)">Rejected</b> by stall → <b style="color:var(--chalk)">Refunded</b> in USDT from the stall’s wallet, with a reason the customer sees. Partial refunds stay possible after pickup, never above what was paid.</div>
+    <div class="branch">Paid → <b style="color:var(--chalk)">Rejected</b> (or customer cancelled before accept) → <b style="color:var(--chalk)">Refunded</b> through ZeetoCheckout, signed by the stall, gas-free, only to the payer, never above what was paid (enforced onchain). Counter, bill and store payments go straight to done.</div>
   </section>
 
   <section class="two">
@@ -583,7 +639,7 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
   </section>
 
   <section id="wa">
-    <div><div class="eyebrow z">WhatsApp · next build</div><h2>The same Zeeto, inside the app everyone already has</h2>
+    <div><div class="eyebrow z">WhatsApp · built, needs Meta keys</div><h2>The same Zeeto, inside the app everyone already has</h2>
     <p class="lede">Two conversations on one Zeeto business number. A repair shop runs its bookings by chatting. A customer orders from a chemist by chatting, with a pharmacist checking the prescription, and pays in USDT through a secure Zeeto link. The wallet never lives inside WhatsApp.</p></div>
     <div class="phones">
 
@@ -670,7 +726,7 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
               <div class="btns one"><span class="pay">🔒 Pay 2.67 USDT ↗</span></div>
               <small class="fine">Opens zeeto.app/pay · works for 15 minutes · only for this number</small>
             </div>
-            <div class="sys pay-sheet"><b>In Zeeto (outside WhatsApp)</b>Code to +91 98•••• 4210 → wallet signs approve + pay on Whitechain → back to chat</div>
+            <div class="sys pay-sheet"><b>In Zeeto (outside WhatsApp)</b>Code to +91 98•••• 4210 → wallet signs once (no gas) → Zeeto relayer settles on Whitechain → back to chat</div>
             <div class="b in card ok">
               <div class="al-h">✅ PAID · CONFIRMED ON WHITECHAIN</div>
               <div class="code"><small>Your pickup code</small><b>SM-307</b></div>
@@ -711,28 +767,28 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
   </section>
 
   <section id="status">
-    <div><div class="eyebrow z">Where things stand · Nov 5, night</div><h2>Built, mocked, waiting</h2></div>
+    <div><div class="eyebrow z">Where things stand · Nov 6, afternoon</div><h2>Built, and what it's waiting for</h2></div>
     <div class="board">
-      <div class="col b"><h3><span class="chip built">Built</span></h3><ul>
-        <li>Web: 13 customer + seller screens, onboarding</li>
-        <li>Mobile: home feed, map, stall, bag, orders, points, wallet, seller mode</li>
-        <li>Shared core: types, 25 stalls, 56 products, service interfaces</li>
-        <li>StreetPayCheckout contract + 17 tests</li>
-        <li>Pickup QR + code check, accept / reject / refund flow</li>
-        <li>Pay at the counter: bill QR, printed QR, sound on the stall’s phone</li>
+      <div class="col b"><h3><span class="chip built">Built and tested</span></h3><ul>
+        <li>ZeetoCheckout + 16 tests (live-USDT fork test)</li>
+        <li>API: orders, stalls, products, bills, Checkout API, admin, AI, Uniswap, WhatsApp</li>
+        <li>Gas-free relayer with limits, gas log and budget</li>
+        <li>Web: customer, merchant (+ Developers), live admin, hosted checkout, checkout.js</li>
+        <li>Phone app: stories, offers, inbox, GPS map, seller mode, fixed stall grid</li>
+        <li>examples/store, README, SETUP, WHATSAPP, WHITECHAIN_FEEDBACK</li>
       </ul></div>
-      <div class="col m"><h3><span class="chip mock">Mocked, clearly labelled</span></h3><ul>
-        <li>Payments (intent, pay, refund, balances)</li>
-        <li>AI drafts (Snap &amp; Sell, typed voice)</li>
-        <li>Login / OTP and wallet creation</li>
-        <li>Weekly sales history</li>
+      <div class="col m"><h3><span class="chip mock">Demo mode until keys</span></h3><ul>
+        <li>Built-in demo stalls stay simulated (labelled)</li>
+        <li>Snap &amp; Sell falls back to a sample draft without Gemini</li>
+        <li>Uniswap quotes are samples without the API key</li>
       </ul></div>
-      <div class="col"><h3><span class="chip key">Waiting on keys / accounts</span></h3><ul>
-        <li>Contract deploy (deployer + signer key, test WBT, test USDT)</li>
-        <li>Supabase project → API + database</li>
-        <li>Privy app id, Mapbox token</li>
-        <li>Arkiv network + key, 0G key</li>
-        <li>Meta WhatsApp test number</li>
+      <div class="col"><h3><span class="chip key">Sameer's steps</span></h3><ul>
+        <li>Run supabase/schema.sql</li>
+        <li>Deployer + relayer wallets, WBT from faucet</li>
+        <li>Deploy + verify ZeetoCheckout</li>
+        <li>Vercel env + deploy, Privy allowed origins</li>
+        <li>Test USDT (YetiTrade) → first real payment → README link</li>
+        <li>Demo video · regular commits</li>
       </ul></div>
     </div>
   </section>
@@ -741,15 +797,15 @@ footer { color: var(--dim); font-size: 12.5px; font-family: var(--mono); }
     <div><div class="eyebrow z">Safety rules</div><h2>What the system will never do</h2></div>
     <div class="rules">
       <div class="rule">Mark an order paid because the browser said so. Only the API, after reading the chain.</div>
-      <div class="rule">Hold anyone’s money or keys. USDT goes customer → stall; Privy holds signing keys.</div>
+      <div class="rule">Hold anyone’s money or keys. The contract forwards 100% to the stall in the same transaction; Privy holds signing keys; the relayer holds only WBT.</div>
       <div class="rule">Let AI act alone. It drafts; the vendor confirms; the API validates prices and quantities.</div>
       <div class="rule">Move money from WhatsApp. Refunds and withdrawals need the app and the stall’s wallet.</div>
-      <div class="rule">Put personal data on Arkiv. Only public shop and listing data goes there.</div>
-      <div class="rule">Show a mock as real. Every simulated value carries a “Simulated” label on screen.</div>
+      <div class="rule">Let the client set a price, wallet or role. Amounts come from the database, wallets from Privy, roles from the server.</div>
+      <div class="rule">Show a mock as real, or crypto words to a payer. Demo values are labelled; real stalls show “Pay ₹120” and “Paid”.</div>
     </div>
   </section>
 
   <footer>Zeeto · built at ETHGlobal Mumbai 2026 · testnets only (Whitechain Sepolia 1874) · demo rate ₹84 = $1</footer>
 </div>
 
-</html>
+</body></html>

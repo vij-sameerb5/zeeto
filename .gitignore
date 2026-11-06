@@ -9,8 +9,10 @@ dist-preview
 *.log
 sameers-learning.txt
 
-# Private working notes (kept local)
-AI_USAGE.md
-docs/ARCHITECTURE.md
-docs/BLUEPRINT.md
-docs/JOURNAL.md
+# Local only
+_to_delete/
+.vercel
+contracts/out
+contracts/cache
+contracts/broadcast
+coverage
