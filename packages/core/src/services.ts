@@ -88,7 +88,7 @@ export const mockAi: Ai = {
   async snap() {
     const t0 = Date.now();
     await wait(1700);
-    return { ...SAMPLES[n++ % SAMPLES.length], run: run('qwen-vision + 0gm-1.0', t0) };
+    return { ...SAMPLES[n++ % SAMPLES.length], run: run('sample photo (AI off)', t0) };
   },
   async voice(_a, transcript) {
     const t0 = Date.now();
@@ -96,7 +96,7 @@ export const mockAi: Ai = {
     return {
       items: [{ name: 'Tomatoes', local: 'टोमॅटो', unit: 'kg', priceInr: 30, qty: 20, confidence: 0.93 }],
       alert: { title: 'Tomatoes restocked', body: `${transcript ? `"${transcript}" · ` : ''}20 kg tomatoes tomorrow morning.`, translations: { Hindi: 'कल सुबह 20 किलो टमाटर मिलेंगे।', Marathi: 'उद्या सकाळी २० किलो टोमॅटो मिळतील.' } },
-      run: run('whisper-large-v3 + 0gm-1.0', t0),
+      run: run('sample (AI off)', t0),
     };
   },
 };

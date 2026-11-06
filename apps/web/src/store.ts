@@ -85,6 +85,10 @@ interface S {
   publish: (vendorId: string, d: AiDraft, image?: string) => void;
   addProduct: (p: Omit<Product, 'id'>) => void;
   setStock: (productId: string, stock: number) => void;
+  /** Edit any field of one of your products (name, local name, unit, price, stock, photo). */
+  updateProduct: (productId: string, patch: Partial<Omit<Product, 'id' | 'vendorId'>>) => void;
+  /** Take a product off the stall. On the server it's hidden, not deleted, so old orders keep their lines. */
+  removeProduct: (productId: string) => void;
   redeem: (label: string, cost: number, vendorId: string) => boolean;
   editProfile: (vendorId: string, e: ProfileEdit) => void;
   goLive: (vendorId: string, e: ProfileEdit) => void;
@@ -207,6 +211,8 @@ export const useApp = create<S>()(
       },
       addProduct: (p) => set({ products: [{ ...p, id: `p-${hex(6)}` }, ...get().products] }),
       setStock: (id, n) => set({ products: get().products.map((p) => (p.id === id ? { ...p, stock: Math.max(0, Math.min(10000, n)) } : p)) }),
+      updateProduct: (id, patch) => set({ products: get().products.map((p) => (p.id === id ? { ...p, ...patch } : p)) }),
+      removeProduct: (id) => set({ products: get().products.filter((p) => p.id !== id) }),
       redeem: (label, cost, vendorId) => {
         // Points are per stall: only this stall's points pay for this stall's reward.
         const bal = stallPoints(allPoints(get()), vendorId);
