@@ -5,7 +5,7 @@ import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, CENTER, GROUPS, ME, VENDORS, distance, inr, km, type CategoryGroup, type Vendor } from '@zeeto/core';
-import { findVendor, useVendors } from '../vendors';
+import { findVendor, isReal, useVendors } from '../vendors';
 import { img } from '../media';
 import { useNav } from '../nav';
 import { useApp, useBagCount, useBagTotal } from '../store';
@@ -49,7 +49,7 @@ export default function Explore() {
     return vendors.filter((v) =>
       (group === 'all' || CATEGORIES[v.category].group === group) &&
       (!t || v.name.toLowerCase().includes(t) || CATEGORIES[v.category].label.toLowerCase().includes(t) || products.some((p) => p.vendorId === v.id && p.name.toLowerCase().includes(t))),
-    ).sort((a, b) => km(here, a.location) - km(here, b.location));
+    ).sort((a, b) => Number(isReal(b)) - Number(isReal(a)) || km(here, a.location) - km(here, b.location)); // real stalls first
   }, [group, q, products, here, vendors]);
   const peek = shown.find((v) => v.id === sel);
 
@@ -69,6 +69,17 @@ export default function Explore() {
         <Search size={18} color={C.mute} />
         <TextInput value={q} onChangeText={setQ} placeholder="Tomatoes, medicine, LED bulb…" placeholderTextColor={C.dim} style={st.input} returnKeyType="search" />
       </View>
+      {shown.some(isReal) && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {shown.filter(isReal).map((v) => (
+            <Pressable key={v.id} onPress={() => nav.push({ name: 'stall', id: v.id })} style={st.real}>
+              <Face media={v.avatar} size={26} />
+              <Text style={{ color: C.chalk, fontWeight: '700', fontSize: 13 }} numberOfLines={1}>{v.name}</Text>
+              <Text style={{ color: C.good, fontSize: 10, fontWeight: '800' }}>LIVE</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         <Pill title="All" on={group === 'all'} onPress={() => setGroup('all')} />
         {GROUPS.map((g) => <Pill key={g.id} title={g.label} on={group === g.id} onPress={() => setGroup(g.id)} />)}
@@ -224,6 +235,7 @@ export function BagBar() {
 }
 
 const st = StyleSheet.create({
+  real: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4, paddingRight: 12, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.good, backgroundColor: 'rgba(20,20,20,0.9)' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   h1: { color: C.chalk, fontSize: 26, fontWeight: '800', letterSpacing: -0.8, marginTop: 4 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, borderRadius: 24, borderWidth: 1, borderColor: C.line2, backgroundColor: C.panel, paddingHorizontal: 16 },

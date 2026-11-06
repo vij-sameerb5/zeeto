@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import {
-  ALERTS, FOLLOWING, ME, MY_ORDERS, POINTS, PRODUCTS, VENDORS, VENDOR_ORDERS,
+  ALERTS, FOLLOWING, ME, PRODUCTS, VENDORS, VENDOR_ORDERS,
   hex, loyaltyCards, pickupCode, pointsFor, stallPoints, toUsd,
   type AiDraft, type Alert, type Hex, type Order, type OrderLine, type Payment, type PointsEntry, type Product, type Refund, type Vendor,
 } from '@zeeto/core';
@@ -76,6 +76,8 @@ interface S {
   createStall: (v: Vendor) => void;
   /** Signed-in user id, mirrored from the auth layer so the store can find their stall. */
   me: string | null;
+  /** The real account this browser's personal data belongs to. A different (or first) real sign-in starts clean. */
+  owner: string | null;
   setMe: (id: string | null) => void;
   packed: (orderId: string) => void;
   handedOver: (orderId: string) => void;
@@ -118,13 +120,14 @@ const fresh = () => ({
   bag: { vendorId: null as string | null, lines: {} as Record<string, number> },
   products: PRODUCTS,
   alerts: ALERTS,
-  myOrders: MY_ORDERS,
+  myOrders: [] as Order[], // nobody sees sample orders as their own
   stallOrders: VENDOR_ORDERS,
-  points: POINTS,
+  points: [] as PointsEntry[],
   edits: {} as Record<string, ProfileEdit>,
   requests: {} as Record<string, PayRequest>,
   myStalls: [] as Vendor[],
   me: null as string | null,
+  owner: null as string | null,
   roles: {} as Record<string, 'customer' | 'merchant' | 'admin'>,
   stallFlags: {} as Record<string, { suspended?: boolean; verified?: boolean }>,
   onboarded: false,
@@ -194,7 +197,17 @@ export const useApp = create<S>()(
       handedOver: (id) => move(id, ['ready', 'accepted'], (o) => ({ ...o, status: 'done' })),
       arrived: (id) => move(id, ['paid', 'accepted', 'ready'], (o) => ({ ...o, arrivedAt: new Date().toISOString() })),
       askCancel: (id) => move(id, ['paid'], (o) => ({ ...o, cancelAsked: true })),
-      setMe: (id) => { if (get().me !== id) set({ me: id }); },
+      setMe: (id) => {
+        if (get().me === id) return;
+        // A real account (not the demo session) never sees sample orders, points, follows or someone else's data:
+        // the first time it signs in on this browser, its personal lists start empty and fill from the server.
+        if (id && !id.startsWith('demo:') && get().owner !== id) {
+          set({ me: id, owner: id, myOrders: [], points: [], liked: [], saved: [], requests: {}, bag: { vendorId: null, lines: {} },
+            stallOrders: VENDOR_ORDERS, roles: {}, onboarded: false });
+          return;
+        }
+        set({ me: id });
+      },
       createStall: (v) => set({ myStalls: [v, ...get().myStalls.filter((x) => x.id !== v.id)] }),
       refunded: (id, r, full) => {
         const f = (o: Order) => ({ ...o, status: full ? ('refunded' as const) : ('part-refunded' as const), refunds: [...o.refunds, r] });
@@ -277,7 +290,8 @@ export const useApp = create<S>()(
       reset: () => set(fresh()),
     };
     },
-    { name: 'zeeto-v3', storage: createJSONStorage(() => storage), partialize: (s) => ({ ...s, toast: null }) },
+    { name: 'zeeto-v4', // v4: accounts start empty (no sample orders / points)
+      storage: createJSONStorage(() => storage), partialize: (s) => ({ ...s, toast: null }) },
   ),
 );
 

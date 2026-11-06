@@ -22,6 +22,7 @@ import Developers from './screens/seller/Developers';
 import Products from './screens/seller/Products';
 import SellOrders from './screens/seller/SellOrders';
 import Store from './screens/seller/Store';
+import WhatsApp from './screens/seller/WhatsApp';
 
 /** The single-file share build can't use URL paths, so it routes in memory. */
 const Router = ({ children }: { children: ReactNode }) => (__SINGLE__ ? <MemoryRouter>{children}</MemoryRouter> : <BrowserRouter>{children}</BrowserRouter>);
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="developers" element={<Developers />} />
           <Route path="store" element={<Store />} />
+          <Route path="whatsapp" element={<WhatsApp />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -1,4 +1,4 @@
-import { ClipboardList, Compass, Home, Images, Package, QrCode, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
+import { ClipboardList, Compass, MessageCircle, Home, Images, Package, QrCode, Receipt, Sparkles, Store, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useMyStallId, useApp, useBagCount } from '../store';
@@ -90,6 +90,7 @@ export function SellerFrame() {
           { to: '/sell/products', label: 'Products', icon: <Package size={22} /> },
           { to: '/sell/payments', label: 'Payments', icon: <Wallet size={22} /> },
           { to: '/sell/store', label: 'Store', icon: <Store size={22} /> },
+          { to: '/sell/whatsapp', label: 'WhatsApp', icon: <MessageCircle size={22} /> },
         ]}
         extra={<div className="flex flex-col items-center gap-2"><Link to="/explore" className="flex w-[68px] flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-dim hover:text-chalk"><Compass size={20} />Shop</Link><AccountButton compact /></div>}
       />

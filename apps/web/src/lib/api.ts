@@ -7,7 +7,10 @@ import { create } from 'zustand';
  */
 export type Features = { auth: boolean; db: boolean; checkout: boolean; relay: boolean; ai: boolean; uniswap: boolean; whatsapp: boolean };
 
-export const useServer = create<{ status: 'checking' | 'on' | 'off'; features: Partial<Features>; relayer: string | null }>(() => ({ status: 'checking', features: {}, relayer: null }));
+export const useServer = create<{ status: 'checking' | 'on' | 'off'; features: Partial<Features>; relayer: string | null; waNumber: string | null }>(() => ({ status: 'checking', features: {}, relayer: null, waNumber: null }));
+
+/** wa.me link to Zeeto's WhatsApp number with a message typed in, or null until the number is set. */
+export const waMe = (text: string) => { const n = useServer.getState().waNumber?.replace(/\D/g, ''); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : null; };
 
 /** Is the shared backend live (database + sign-in)? */
 export const serverOn = () => useServer.getState().status === 'on';
@@ -18,7 +21,7 @@ export async function checkServer() {
     const r = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
     const j = r.ok && (r.headers.get('content-type') ?? '').includes('json') ? await r.json() : null;
     const f = (j?.features ?? {}) as Partial<Features>;
-    useServer.setState({ status: j?.ok && f.db && f.auth ? 'on' : 'off', features: f, relayer: j?.relayer ?? null });
+    useServer.setState({ status: j?.ok && f.db && f.auth ? 'on' : 'off', features: f, relayer: j?.relayer ?? null, waNumber: j?.waNumber ?? null });
   } catch {
     useServer.setState({ status: 'off', features: {} });
   }

@@ -160,6 +160,7 @@ export async function signAndSettle(i: ServerIntent, s: Wallet, onStep: (st: Pay
     throw new PayError(cancelled(e) ? 'You cancelled. Nothing was charged.' : 'We couldn’t confirm the payment. Nothing was charged.');
   }
   onStep('send');
+  let relayErr: Error | null = null;
   try {
     const o = await submit({ signed: i.message, signature });
     onStep('verify');
@@ -167,10 +168,11 @@ export async function signAndSettle(i: ServerIntent, s: Wallet, onStep: (st: Pay
   } catch (e) {
     // Only fall back when the relayer itself is unavailable; every other error (bad signature, limits) is final.
     if (!['relay-off', 'budget', 'gas-spike'].includes(String((e as PayError & { code?: string }).code))) throw e;
+    relayErr = e as Error;
   }
   // Fallback: submit through the contract from the payer's own wallet (needs a little WBT for gas).
   const gas = await publicClient.getBalance({ address: s.address });
-  if (gas === 0n) throw new PayError('Gas-free payments are paused right now. Try again soon.');
+  if (gas === 0n) throw new PayError(`${relayErr?.message ?? 'Gas-free payments are busy.'} Nothing was charged.`);
   const c = i.call;
   let hash: Hex;
   try {

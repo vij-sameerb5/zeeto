@@ -17,6 +17,9 @@ import Wallet from './screens/Wallet';
 import Welcome from './screens/Welcome';
 import { C } from './theme';
 import { loadRemote } from './vendors';
+import { loadServer } from './server';
+import { useSession } from './session';
+import { useApp } from './store';
 
 export default function App() {
   const [stack, setStack] = useState<Route[]>([{ name: 'welcome' }]);
@@ -35,6 +38,13 @@ export default function App() {
 
   // Real stalls from the Zeeto server, refreshed every minute.
   useEffect(() => { void loadRemote(); const t = setInterval(loadRemote, 60_000); return () => clearInterval(t); }, []);
+
+  // Signed in: this phone's personal data belongs to that wallet (a new account starts empty), and your real orders
+  // (and your stall's, if you run one) refresh every 5 seconds.
+  const address = useSession((s) => s.address);
+  const token = useSession((s) => s.token);
+  useEffect(() => { if (address) useApp.getState().startFresh(address.toLowerCase()); }, [address]);
+  useEffect(() => { void loadServer(); if (!token) return; const t = setInterval(loadServer, 5000); return () => clearInterval(t); }, [token]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {

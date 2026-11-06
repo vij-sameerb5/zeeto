@@ -4,6 +4,7 @@ import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'rea
 import { RAILS, VENDORS, ago, inr, short, UNITS, type OrderStatus } from '@zeeto/core';
 import { findVendor } from '../vendors';
 import { useApp } from '../store';
+import { orderStep, useMyOrders } from '../server';
 import { C, mono } from '../theme';
 import { Bar, Btn, Face, Label, Sim, s as ui } from '../ui';
 
@@ -19,9 +20,13 @@ export const STATUS: Record<OrderStatus, { label: string; color: string }> = {
 };
 
 export default function OrderScreen({ id }: { id: string }) {
-  const o = useApp((x) => x.orders.find((y) => y.id === id));
-  const arrived = useApp((x) => x.arrived);
-  const askCancel = useApp((x) => x.askCancel);
+  const o = useMyOrders().find((y) => y.id === id);
+  const localArrived = useApp((x) => x.arrived);
+  const localCancel = useApp((x) => x.askCancel);
+  // Real orders move on the server (the stall sees it at once); sample-stall orders stay on this phone.
+  const step = (a: 'arrived' | 'cancel') => (o?.server ? orderStep(o.id, a).catch((e) => Alert.alert('Couldn’t update', (e as Error).message)) : a === 'arrived' ? localArrived(id) : localCancel(id));
+  const arrived = () => step('arrived');
+  const askCancel = () => step('cancel');
   const [sure, setSure] = useState(false);
   if (!o) return <View style={{ flex: 1, backgroundColor: C.bg }}><Bar title="Order" /></View>;
   const v = findVendor(o.vendorId)!;
@@ -47,10 +52,10 @@ export default function OrderScreen({ id }: { id: string }) {
           {open && <Text style={{ color: C.dim, fontSize: 12, textAlign: 'center' }}>No QR needed. {v.owner.split(' ')[0]} sees the same code on their phone.</Text>}
           {open && !o.cancelAsked && (o.arrivedAt
             ? <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}><BellRing size={15} color={C.good} /><Text style={{ color: C.good, fontWeight: '700' }}>{v.owner.split(' ')[0]} knows you’re here</Text></View>
-            : <Btn title="I’m at the stall" onPress={() => arrived(o.id)} style={{ alignSelf: 'stretch' }} right={<BellRing size={16} color={C.ink} />} />)}
+            : <Btn title="I’m at the stall" onPress={() => arrived()} style={{ alignSelf: 'stretch' }} right={<BellRing size={16} color={C.ink} />} />)}
           {o.status === 'paid' && !o.cancelAsked && (sure ? (
             <View style={{ flexDirection: 'row', gap: 8, alignSelf: 'stretch' }}>
-              <Btn title="Yes, cancel" kind="line" style={{ flex: 1, height: 44 }} onPress={() => { askCancel(o.id); setSure(false); Alert.alert('Cancel requested', 'The stall refunds you in full.'); }} />
+              <Btn title="Yes, cancel" kind="line" style={{ flex: 1, height: 44 }} onPress={() => { askCancel(); setSure(false); Alert.alert('Cancel requested', 'The stall refunds you in full.'); }} />
               <Btn title="Keep order" kind="line" style={{ flex: 1, height: 44 }} onPress={() => setSure(false)} />
             </View>
           ) : (

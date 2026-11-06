@@ -2,9 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { db } from './_lib/db.js';
 import { env, has } from './_lib/env.js';
 import { clip, draftFrom, gemini, type Draft } from './_lib/gemini.js';
+import { askStall as stallInsights, todayReport } from './_lib/insights.js';
 import { notifyCustomer, transition, type OrderRow } from './_lib/orders.js';
 import { CATEGORIES, MAX_ORDER_INR, newId, REQUEST_TTL_MS } from './_lib/shared.js';
-import { signedByMeta, site, waLink, waMedia, waText } from './_lib/wa.js';
+import { signedByMeta, site, waButtons, waLink, waList, waMedia, waText } from './_lib/wa.js';
 
 /**
  * WhatsApp Cloud API webhook.
@@ -15,7 +16,7 @@ import { signedByMeta, site, waLink, waMedia, waText } from './_lib/wa.js';
  *             "orders"                         → open orders with codes
  *             "accept AB-123" / "ready AB-123" / "done AB-123"
  *             "bill 250"                       → a pay link to forward or show
- *             "open" / "close"
+ *             "open" / "close" · "today" (sales report) · "tips" (Gemini, from the stall's own numbers) · "refund" (link)
  *             a photo of today's stock → Gemini drafts the listing → "publish" puts it live, "cancel" drops it
  * Anything else, in any language ("chai kahan milegi?", "aaj 20 kilo tamatar 40 rupaye"), goes to Gemini, which may only
  * pick one of the commands above. It can never move money or change an order by itself beyond what the command allows.
@@ -27,15 +28,26 @@ const HELP_CUSTOMER = `Zeeto 🛒 pay street stalls in USDT, no gas.
 • pay <stall> <amount>  e.g. "pay ravi 120"
 • orders  see your orders
 • or just ask, in any language: "where can I get chai?"`;
+const MENU_CUSTOMER = [{ id: 'cmd:find', title: '📍 Stalls on Zeeto' }, { id: 'cmd:orders', title: '🧾 My orders' }];
 const HELP_STALL = `Zeeto stall commands:
 • orders  open orders
 • accept AB-123 · ready AB-123 · done AB-123
 • bill 250  a pay link for a customer
-• open · close
+• today  today's sales report
+• tips  AI tips from your own numbers
+• open · close · refund
 • send a photo of your stock: AI writes the listing, reply "publish"
 • or just type: "aaj 20 kilo tamatar 40 rupaye"`;
 
-type Msg = { id: string; from: string; type: string; text?: { body?: string }; image?: { id?: string; caption?: string } };
+type Msg = {
+  id: string; from: string; type: string; text?: { body?: string }; image?: { id?: string; caption?: string };
+  /** A tapped button or list row (we set the ids when sending, e.g. "accept:NT-576", "cmd:orders", "stall:ravi"). */
+  interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } };
+};
+const MENU_STALL = [{ id: 'cmd:orders', title: '📋 Open orders' }, { id: 'cmd:today', title: '📊 Today' }, { id: 'cmd:tips', title: '✨ AI tips' }];
+
+/** A tap means the same as typing its command, so taps and typing go through one set of checks. */
+const tapToText = (id: string) => (id.startsWith('cmd:') ? id.slice(4) : id.includes(':') ? id.replace(':', ' ') : id).slice(0, 80);
 type Stall = { id: string; data: Record<string, unknown> & { name?: string }; status: string };
 
 async function raw(req: VercelRequest): Promise<string> {
@@ -64,7 +76,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const msgs = payload.entry?.flatMap((e) => e.changes?.flatMap((c) => c.value?.messages ?? []) ?? []) ?? [];
   for (const m of msgs) {
     // Meta retries: handle each message id once.
-    const seen = await db().from('wa_messages').insert({ id: m.id, from_phone: m.from, body: (m.text?.body ?? (m.image ? `[photo] ${m.image.caption ?? ''}` : m.type)).slice(0, 500) });
+    const tap = m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id;
+    const seen = await db().from('wa_messages').insert({ id: m.id, from_phone: m.from, body: (m.text?.body ?? (tap ? `[tap] ${tap}` : m.image ? `[photo] ${m.image.caption ?? ''}` : m.type)).slice(0, 500) });
     if (seen.error) continue;
     try {
       const reply = await handle(`+${m.from.replace(/\D/g, '')}`, m);
@@ -78,7 +91,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handle(phone: string, m: Msg): Promise<string | null> {
-  const msg = (m.text?.body ?? '').trim().slice(0, 500);
+  const tap = m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id;
+  const msg = (tap ? tapToText(tap) : m.text?.body ?? '').trim().slice(0, 500);
   const words = msg.toLowerCase().split(/\s+/).filter(Boolean);
   const cmd = words[0] ?? '';
   const stall = (await db().from('vendors').select('id, data, status').eq('wa_phone', phone).maybeSingle()).data as Stall | null;
@@ -89,13 +103,33 @@ async function handle(phone: string, m: Msg): Promise<string | null> {
     return askStall(phone, stall, msg);
   }
   if (m.type === 'image') return say(phone, 'Thanks! Photos are for stalls listing their stock. To pay, send "pay <stall> <amount>".');
+  if (cmd === 'stall' && words[1]) return stallMenu(phone, words[1]);
+  if (cmd === 'find') return findStalls(phone);
   if (cmd === 'pay' && words.length >= 3) return payLink(phone, words.slice(1, -1).join(' '), words[words.length - 1]);
   if (cmd === 'orders' || cmd === 'status') {
     await waLink(phone, 'Your Zeeto orders and pickup codes:', 'My orders', site('/orders'));
     return 'orders link';
   }
-  if (['hi', 'hello', 'help', 'menu', 'start'].includes(cmd) || !msg) return say(phone, HELP_CUSTOMER);
+  if (['hi', 'hello', 'help', 'menu', 'start', 'namaste'].includes(cmd) || !msg) { await waButtons(phone, HELP_CUSTOMER, MENU_CUSTOMER, 'Zeeto'); return 'menu'; }
   return askCustomer(phone, msg);
+}
+
+/** Live stalls as a tap list (newest first). */
+async function findStalls(phone: string) {
+  const list = ((await db().from('vendors').select('id, data, status').eq('status', 'live').order('created_at', { ascending: false }).limit(10)).data ?? []) as Stall[];
+  if (!list.length) return say(phone, 'No stalls are open on Zeeto right now.');
+  await waList(phone, 'Stalls taking orders on Zeeto right now. Pick one to see what they sell.', 'See stalls', list.map((v) => ({ id: `stall:${v.id}`, title: String(v.data.name ?? v.id), description: [clip(v.data.tagline, 40), clip(v.data.landmark, 30)].filter(Boolean).join(' · ') })));
+  return 'stall list';
+}
+
+/** One stall's menu in chat, with a button to order on Zeeto. */
+async function stallMenu(phone: string, id: string) {
+  const v = (await db().from('vendors').select('id, data, status').eq('id', id.replace(/[^a-z0-9-]/g, '').slice(0, 48)).maybeSingle()).data as Stall | null;
+  if (!v || v.status === 'suspended') return say(phone, 'That stall isn’t on Zeeto.');
+  const items = ((await db().from('products').select('data, price_inr, stock').eq('vendor_id', v.id).eq('active', true).gt('stock', 0).limit(8)).data ?? []) as { data: { name?: string; unit?: string }; price_inr: number }[];
+  const menu = items.length ? items.map((p) => `• ${p.data.name} · ₹${p.price_inr}/${p.data.unit === 'piece' ? 'pc' : p.data.unit}`).join('\n') : 'Menu coming soon. You can still pay any amount.';
+  await waLink(phone, `*${v.data.name}*${v.status !== 'live' ? ' (closed now)' : ''}\n${clip(v.data.tagline, 80)}\n\n${menu}\n\nOrder for pickup on Zeeto, or reply "pay ${v.id} <amount>" to pay at the counter. No gas fee.`, 'Order on Zeeto', site(`/s/${v.id}`));
+  return `menu ${v.id}`;
 }
 
 async function payLink(phone: string, whoRaw: string, amountRaw: string) {
@@ -117,7 +151,7 @@ async function payLink(phone: string, whoRaw: string, amountRaw: string) {
   return `link ${id}`;
 }
 
-const KNOWN_STALL = new Set(['open', 'close', 'orders', 'bill', 'accept', 'ready', 'done', 'publish', 'cancel', 'help', 'menu', 'hi']);
+const KNOWN_STALL = new Set(['open', 'close', 'orders', 'bill', 'accept', 'ready', 'done', 'publish', 'cancel', 'help', 'menu', 'hi', 'today', 'stats', 'report', 'tips', 'refund']);
 
 async function stallCommand(phone: string, stall: Stall, cmd: string, words: string[]): Promise<string> {
   if (cmd === 'publish') return publishDraft(phone, stall);
@@ -132,8 +166,36 @@ async function stallCommand(phone: string, stall: Stall, cmd: string, words: str
   }
   if (cmd === 'orders') {
     const list = (await db().from('orders').select('code, customer, inr, status, cancel_asked').eq('vendor_id', stall.id).in('status', ['paid', 'accepted', 'ready']).order('created_at').limit(15)).data as { code: string; customer: string; inr: number; status: string; cancel_asked: boolean }[] | null;
-    if (!list?.length) return say(phone, 'No open orders right now.');
-    return say(phone, list.map((o) => `${o.code} · ₹${o.inr} · ${o.customer} · ${o.cancel_asked ? 'CANCEL ASKED, refund in app' : o.status}`).join('\n'));
+    if (!list?.length) { await waButtons(phone, 'No open orders right now. 👌', [{ id: 'cmd:today', title: '📊 Today' }, { id: 'cmd:tips', title: '✨ AI tips' }]); return 'no orders'; }
+    const label: Record<string, string> = { paid: '🆕 new, accept it', accepted: '📦 packing', ready: '✅ ready for pickup' };
+    // One tap for the next step on the oldest order in each state.
+    const next = [
+      list.find((o) => o.status === 'paid' && !o.cancel_asked) && { id: `accept:${list.find((o) => o.status === 'paid' && !o.cancel_asked)!.code}`, title: `✅ Accept ${list.find((o) => o.status === 'paid' && !o.cancel_asked)!.code}` },
+      list.find((o) => o.status === 'accepted') && { id: `ready:${list.find((o) => o.status === 'accepted')!.code}`, title: `📦 Ready ${list.find((o) => o.status === 'accepted')!.code}` },
+      list.find((o) => o.status === 'ready') && { id: `done:${list.find((o) => o.status === 'ready')!.code}`, title: `🤝 Done ${list.find((o) => o.status === 'ready')!.code}` },
+    ].filter(Boolean) as { id: string; title: string }[];
+    const text = `*Open orders (${list.length})*\n${list.map((o) => `${o.code} · ₹${o.inr} · ${o.customer} · ${o.cancel_asked ? '⚠️ asked to cancel, send "refund"' : label[o.status]}`).join('\n')}`;
+    if (next.length) await waButtons(phone, text, next); else await waText(phone, text);
+    return `orders ${list.length}`;
+  }
+  if (cmd === 'today' || cmd === 'stats' || cmd === 'report') {
+    const t = await todayReport(stall.id);
+    const text = [`📊 *Today at ${stall.data.name}*`, `Orders: ${t.orders}`, `Sales: ₹${t.salesInr.toLocaleString('en-IN')}`, `Received: ${t.usdt.toFixed(2)} USDT`, `Open now: ${t.open}`,
+      t.top.length ? `Best sellers: ${t.top.map(([n, q]) => `${n} (${q})`).join(', ')}` : '', t.low.length ? `Running low: ${t.low.map((l) => `${l.name} (${l.stock})`).join(', ')}` : '', t.refunded ? `Refunded: ${t.refunded}` : '']
+      .filter(Boolean).join('\n');
+    await waButtons(phone, text, [{ id: 'cmd:orders', title: '📋 Open orders' }, { id: 'cmd:tips', title: '✨ AI tips' }]);
+    return 'today';
+  }
+  if (cmd === 'tips') {
+    if (!has.ai) return say(phone, 'AI tips need the Gemini key on the server. Send "today" for your numbers.');
+    const r = await stallInsights({ id: stall.id, data: stall.data }, words.slice(1).join(' '));
+    await waText(phone, [`✨ ${r.answer}`, ...r.insights.map((i) => `• *${i.title}*: ${i.body}`)].join('\n\n'));
+    return 'ai tips';
+  }
+  if (cmd === 'refund') {
+    // Refunds move money from the stall's wallet, so the stall's own wallet has to sign: that happens in Zeeto, not in chat.
+    await waLink(phone, '🔒 Refunds move money, so your wallet confirms them in Zeeto. It takes 10 seconds and there’s no gas fee.', 'Open refunds', site('/sell/orders'));
+    return 'refund link';
   }
   if (cmd === 'bill' && words[1]) {
     const amount = Number(words[1].replace(/[₹,]/g, ''));
@@ -151,9 +213,12 @@ async function stallCommand(phone: string, stall: Stall, cmd: string, words: str
     if (cmd === 'accept' && o.cancel_asked) return say(phone, `${code}: the customer asked to cancel. Refund it in the app.`);
     const r = await transition(o.id, step.from, { status: step.to });
     await notifyCustomer(r, `${stall.data.name} ${step.tell} (${r.code})`);
-    return say(phone, `${code} → ${step.to} ✅`);
+    const then = cmd === 'accept' ? [{ id: `ready:${code}`, title: `📦 Ready ${code}` }] : cmd === 'ready' ? [{ id: `done:${code}`, title: `🤝 Done ${code}` }] : [{ id: 'cmd:orders', title: '📋 Open orders' }];
+    await waButtons(phone, `${code} → ${step.to === 'accepted' ? 'accepted, customer told' : step.to === 'ready' ? 'ready, customer told to come' : 'handed over'} ✅`, then);
+    return `${code} ${step.to}`;
   }
-  return say(phone, HELP_STALL);
+  await waButtons(phone, HELP_STALL, MENU_STALL, String(stall.data.name ?? 'Zeeto'));
+  return 'stall help';
 }
 
 async function findStall(q: string): Promise<Stall | null> {
@@ -198,7 +263,7 @@ async function snapFromPhoto(phone: string, stall: Stall, mediaId: string, capti
   // Small photos are kept as the product picture; big ones use the stall's cover photo.
   const photo = img.b64.length <= 150_000 ? `data:${img.mime};base64,${img.b64}` : undefined;
   await saveDraft(stall, draft, photo);
-  await waText(phone, `Here’s your listing ✨\n\n${draftText(draft)}\n\nReply *publish* to put it on your stall, or *cancel*. You can fix prices in the app any time.`);
+  await waButtons(phone, `${draftText(draft)}\n\nCheck the prices. Change anything by typing it (e.g. "tomato 35"), or edit in the app later.`, DRAFT_BUTTONS, '✨ AI draft · check it');
   return 'ai draft';
 }
 
@@ -217,10 +282,12 @@ async function publishDraft(phone: string, stall: Stall) {
   return say(phone, `Live ✅ ${rows.length} item${rows.length === 1 ? '' : 's'} now on your stall: ${site(`/s/${stall.id}`)}`);
 }
 
+const DRAFT_BUTTONS = [{ id: 'cmd:publish', title: '✅ Publish' }, { id: 'cmd:cancel', title: '✕ Cancel' }];
+
 const stallIntent = {
   type: 'OBJECT',
   properties: {
-    action: { type: 'STRING', enum: ['orders', 'accept', 'ready', 'done', 'bill', 'open', 'close', 'list', 'help'] },
+    action: { type: 'STRING', enum: ['orders', 'accept', 'ready', 'done', 'bill', 'open', 'close', 'list', 'today', 'ask', 'refund', 'help'] },
     code: { type: 'STRING' }, amount: { type: 'INTEGER' }, reply: { type: 'STRING' },
   },
   required: ['action', 'reply'],
@@ -232,7 +299,8 @@ async function askStall(phone: string, stall: Stall, msg: string): Promise<strin
   const { out } = await gemini([{ text: `You are the WhatsApp helper for a Mumbai street stall called "${stall.data.name}" on Zeeto.
 Map the owner's message (any language, Hinglish too) to ONE action:
 orders (see open orders), accept / ready / done (need a pickup code like AB-123), bill (needs a whole-rupee amount), open, close,
-list (they are telling you what stock they have today, with or without prices), help (anything else).
+list (they are telling you what stock they have today, with or without prices), today (how are sales today),
+ask (a question about their business: what sells, best hours, what to restock, an offer idea), refund, help (anything else).
 "reply" is one short friendly line in the owner's language. Never promise money movements.
 Message: <<<${clip(msg, 400)}>>>` }], stallIntent, { temperature: 0.1, maxTokens: 300 });
   const action = String(out.action ?? 'help');
@@ -242,12 +310,13 @@ Message: <<<${clip(msg, 400)}>>>` }], stallIntent, { temperature: 0.1, maxTokens
     const { draft } = await draftFrom({ text: msg });
     if (!draft.items.length) { await waText(phone, clip(out.reply, 300) || 'Tell me what you have and the price, e.g. "20 kg tomato 40 rupees".'); return 'ai empty'; }
     await saveDraft(stall, draft);
-    await waText(phone, `Got it ✨\n\n${draftText(draft)}\n\nReply *publish* to put it on your stall, or *cancel*.`);
+    await waButtons(phone, draftText(draft), DRAFT_BUTTONS, '✨ AI draft · check it');
     return 'ai draft';
   }
   if (['accept', 'ready', 'done'].includes(action) && code) return `ai→${await stallCommand(phone, stall, action, [action, code])}`.slice(0, 500);
   if (action === 'bill' && Number.isInteger(amount) && amount > 0) return `ai→${await stallCommand(phone, stall, 'bill', ['bill', String(amount)])}`.slice(0, 500);
-  if (['orders', 'open', 'close'].includes(action)) return `ai→${await stallCommand(phone, stall, action, [action])}`.slice(0, 500);
+  if (['orders', 'open', 'close', 'today', 'refund'].includes(action)) return `ai→${await stallCommand(phone, stall, action, [action])}`.slice(0, 500);
+  if (action === 'ask') return `ai→${await stallCommand(phone, stall, 'tips', ['tips', ...msg.split(/\s+/)])}`.slice(0, 500);
   await waText(phone, `${clip(out.reply, 300)}\n\n${HELP_STALL}`.trim());
   return 'ai help';
 }
@@ -288,7 +357,10 @@ Only use stall ids from the list. "reply" is one or two short friendly lines in 
     return 'ai orders';
   }
   const picks = (Array.isArray(out.picks) ? out.picks : []).map(String).filter((id) => known.has(id)).slice(0, 3);
-  const lines = picks.map((id) => `• ${list.find((x) => x.id === id)!.data.name}: ${site(`/s/${id}`)}`);
-  await waText(phone, [clip(out.reply, 300), ...lines, lines.length ? 'To pay one: "pay <stall> <amount>"' : HELP_CUSTOMER].filter(Boolean).join('\n'));
+  if (picks.length) {
+    await waList(phone, clip(out.reply, 300) || 'Here are stalls for that:', 'See stalls', picks.map((id) => { const v = list.find((x) => x.id === id)!; return { id: `stall:${id}`, title: String(v.data.name ?? id), description: clip(v.data.tagline, 60) }; }));
+  } else {
+    await waButtons(phone, [clip(out.reply, 300), HELP_CUSTOMER].filter(Boolean).join('\n\n'), MENU_CUSTOMER);
+  }
   return `ai ${intent}`;
 }

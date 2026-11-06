@@ -10,6 +10,8 @@ import { C, mono } from '../theme';
 import { Bar, Btn, Face, Label, Pic, Sim, s as ui } from '../ui';
 import { STATUS } from './Order';
 import { WEB_URL, openWeb } from '../web';
+import { useServer } from '../server';
+import MyStall from './MyStall';
 
 type Seg = 'orders' | 'post' | 'collect' | 'snap' | 'stock' | 'money';
 
@@ -21,7 +23,13 @@ const GROUPS: [string, OrderStatus[]][] = [['New', ['paid']], ['Packing', ['acce
  * New → Accept or Reject (reject refunds in full). If the customer asked to cancel, only Refund is offered.
  * Accepted → Packed. Ready → Hand over after the customer says their name and code.
  */
+/** Signed in and running a real stall → your stall. Otherwise the sample stall (labelled), so judges can try seller mode. */
 export default function Sell() {
+  const stallId = useServer((x) => x.stallId);
+  return stallId ? <MyStall stallId={stallId} /> : <SampleSell />;
+}
+
+function SampleSell() {
   const [seg, setSeg] = useState<Seg>('orders');
   const v = VENDORS.find((x) => x.id === MY_STALL)!;
   const orders = useApp((x) => x.stallOrders);
@@ -33,7 +41,7 @@ export default function Sell() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Bar title="Seller mode" right={<Sim />} />
+      <Bar title="Sample stall" right={<Sim />} />
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Face media={v.avatar} size={52} ring />

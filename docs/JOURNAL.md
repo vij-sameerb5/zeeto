@@ -33,6 +33,21 @@ Whitechain RPC + deployer key + test WBT + test USDT · intent signer key · Sup
 2. `apps/api`: Express + Supabase schema + Privy auth + intent signing + receipt verification + log watcher.
 3. Swap mocks for real services one at a time (payments → Arkiv → 0G → WhatsApp), keeping the "Simulated" labels honest.
 
+## Nov 7 · 00:45–03:00 · Payments fixed, fresh accounts, phone = web, WhatsApp buttons
+
+### Found and fixed
+- **"Gas-free payments are paused"**: Whitechain's gas floor is exactly 5 gwei and the relayer's ceiling was also 5; the check used the wallet's padded max fee (~10 gwei), so every relay was refused as a "gas spike". Now it compares the network's current price with a 50 gwei ceiling and caps the fee it pays. The app now shows the server's real reason instead of a generic message.
+- **Lost replies**: if the relayer's tx confirms but the reply is lost, the retry finds the `Paid` event onchain and settles (no double charge, no stuck "paying"). Each new bag order replaces the same customer's older unpaid ones at that stall.
+- **New accounts saw sample orders/points/payments**: real sign-ins now start empty (web store v4, phone `startFresh`). Sample stalls stay browsable.
+- **Phone app didn't match the web**: the phone now gets a 7-day app session at sign-in and shows your real orders, points and payments; **My stall** runs a real stall (accept → ready → hand over, stock, prices, QR, 7-day stats). Real stalls show first with a LIVE strip on Explore.
+- AI: no more sample vegetables for real stalls; typed text is parsed as typed; Snap & Sell drafts fully editable; Products page fully editable; merchant dashboard with charts, busiest hours, best sellers and a Zeeto AI chat.
+
+### WhatsApp
+Reply buttons and lists everywhere (Accept/Ready/Done, Publish/Cancel, Today/AI tips, stall picker), `today` report, `tips` via Gemini from the stall's own numbers, `refund` → secure link, customer `hi` → menu → stall list → menu with Order button. New **/sell/whatsapp** page with a live phone preview and the key-setup steps in docs/WHATSAPP.md.
+
+### Checks
+Fork test on live Whitechain (`relay.e2e.ts`): customer with 0 WBT pays 4.76 USDT gas-free, reconcile finds it, replay refused, 1 USDT refund, over-refund refused · `test:whatsapp` 12/12 · app token: forged/garbage rejected · web + api tsc, build, 20 routes no errors · mobile tsc + Android bundle.
+
 ## Nov 6 · 22:15–23:30 · First screen, Gemini in WhatsApp, launch checklist
 
 Earlier this evening: **ZeetoCheckout deployed** to Whitechain Sepolia at `0xB3D0d4FB70f1C09C311194E322CDE225eCf3f22f` (tx `0xfd15e6f2…6054`, owner = deployer wallet). Explorer verification failed only because Blockscout's verifier was down; retry command in docs/SETUP.md.

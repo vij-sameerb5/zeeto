@@ -69,7 +69,7 @@ See `contracts/README.md`. Key properties: no funds held, no withdraw, stall bou
 ## 6. Relayer: who pays gas and why it can't be drained
 
 - The business side pays gas: Zeeto's relayer sends every payment and refund. Each transaction is logged (`relay_log`) with its gas and stall, shown on the merchant's Developers page ("network fees covered") and in the accountant CSV. On testnet it's funded from the faucet; in production the merchant is billed per payment.
-- Limits (env, defaults): `RELAY_MIN_INR=10`, `RELAY_USER_PER_DAY=25`, `RELAY_STALL_PER_DAY=500`, `RELAY_DAILY_GAS_WBT=0.5`, `RELAY_MAX_GWEI=5`. Only server-issued intents are submitted; every call is simulated first; the relayer holds only WBT. A drain can cost at most one day's budget, after which customers fall back to self-submitting.
+- Limits (env, defaults): `RELAY_MIN_INR=10`, `RELAY_USER_PER_DAY=25`, `RELAY_STALL_PER_DAY=500`, `RELAY_DAILY_GAS_WBT=0.5`, `RELAY_MAX_GWEI=50` (compared with the network's current gas price; Whitechain testnet's floor is 5 gwei, and the relayer never pays more than the ceiling per gas). Only server-issued intents are submitted; every call is simulated first; the relayer holds only WBT. A drain can cost at most one day's budget, after which customers fall back to self-submitting.
 - Admin shows WBT balance, a low-balance alert, today's gas against the budget, and every relayed transaction.
 
 ## 7. Merchant integration (Checkout API)
@@ -90,6 +90,12 @@ See `docs/WHATSAPP.md`. Payments start in chat (`pay ravi 120` → Pay button) a
 Privy: SMS + email login with an embedded EVM wallet created at login, **or MetaMask** (Privy's wallet login, signature-verified) for people who already hold test USDT in a browser wallet. Phone/email users never see a wallet pop-up; MetaMask users sign the same gas-free authorization in MetaMask, and the relayer still pays gas. The server takes the payer/payout wallet from Privy (embedded first, else the MetaMask wallet the user signed in with), never from the request, and refuses the relayer's own address as an account. Chain 1874. The server verifies the Privy access token (JWKS, issuer, audience, expiry) and reads the user's wallet, phone and email from Privy's API with the app secret. The wallet used for payouts, payments and refunds always comes from Privy. Admin = listed in `ADMIN_USERS` (server): Privy id, phone, email **or wallet address**, checked on every API call.
 
 **First screen (web `/start`, phone Welcome):** pick *I'm shopping* or *I run a stall*, then sign in or sign up in the same step (a new phone/email makes a new account and wallet). The pick only decides where the app opens (`/explore` vs `/join` or `/sell`); being a merchant is still decided by the server when a stall is created with that login. Test USDT held in MetaMask is moved into the Zeeto wallet once (Wallet → "Add USDT from MetaMask"); payments after that are gas-free.
+
+**Fresh accounts.** Sample stalls stay browsable, but nobody sees sample orders, points or payments as their own: a real sign-in on a browser or phone starts with empty personal lists that fill from the server.
+
+**Reconcile.** If the relayer's transaction lands but the reply is lost (timeout, closed tab), the next attempt finds the order's `Paid` event onchain (by order ref and payer) and settles from it instead of failing or charging twice.
+
+**Phone app session.** After the Privy sign-in on `/app-link`, the page asks `/api/session` for a 7-day app token (`zm1.<payload>.<HMAC>`, keyed from the Privy app secret, server-only) and hands it back with the address. The app uses it to read your orders and run your stall (accept / packed / hand over, stock, prices). It can't move money: payments and refunds still open the web where the wallet signs.
 
 The phone app (Expo Go) can't run Privy natively: it opens `/app-link` in an in-app browser, the user signs in, and only the public address and a masked label come back (allowed return schemes: `zeeto:`, `exp:`, `exps:`).
 

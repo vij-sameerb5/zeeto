@@ -11,6 +11,7 @@
     "dev": "npm run dev -w @zeeto/web",
     "build": "npm run build -w @zeeto/web",
     "typecheck": "npm run typecheck -w @zeeto/web",
-    "test:whatsapp": "npx --yes tsx apps/web/api/_test/whatsapp.test.ts"
+    "test:whatsapp": "npx --yes tsx apps/web/api/_test/whatsapp.test.ts",
+    "test:relay": "npx --yes tsx apps/web/api/_test/relay.e2e.ts"
   }
 }

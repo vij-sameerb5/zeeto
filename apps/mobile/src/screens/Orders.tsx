@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VENDORS, ago, inr } from '@zeeto/core';
 import { findVendor } from '../vendors';
 import { useNav } from '../nav';
-import { useApp } from '../store';
+import { useMyOrders } from '../server';
 import { C, mono } from '../theme';
 import { Face, Label, s as ui } from '../ui';
 import { STATUS } from './Order';
@@ -11,7 +11,7 @@ import { STATUS } from './Order';
 export default function Orders() {
   const nav = useNav();
   const top = useSafeAreaInsets().top;
-  const orders = useApp((x) => x.orders);
+  const orders = useMyOrders();
   return (
     <FlatList
       style={{ backgroundColor: C.bg }}

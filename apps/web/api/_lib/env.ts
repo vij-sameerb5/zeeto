@@ -21,7 +21,7 @@ export const env = {
   relayUserPerDay: num('RELAY_USER_PER_DAY', 25),
   relayStallPerDay: num('RELAY_STALL_PER_DAY', 500),
   relayDailyGasWbt: num('RELAY_DAILY_GAS_WBT', 0.5),
-  relayMaxGwei: num('RELAY_MAX_GWEI', 5),
+  relayMaxGwei: num('RELAY_MAX_GWEI', 50), // Whitechain testnet's floor is 5 gwei
   geminiKey: get('GEMINI_API_KEY'),
   geminiModel: get('GEMINI_MODEL') || 'gemini-2.5-flash',
   uniswapKey: get('UNISWAP_API_KEY'),
@@ -30,6 +30,8 @@ export const env = {
   waPhoneId: get('WHATSAPP_PHONE_NUMBER_ID'),
   waVerify: get('WHATSAPP_VERIFY_TOKEN'),
   waAppSecret: get('WHATSAPP_APP_SECRET'),
+  /** The business number people message, e.g. +15551234567 (Meta → WhatsApp → API setup). Public: shown on the site. */
+  waDisplay: get('WHATSAPP_DISPLAY_NUMBER').replace(/[^\d+]/g, ''),
   /** Public site URL, for links in WhatsApp messages, hosted checkout and webhooks. */
   siteUrl: (get('SITE_URL') || (get('VERCEL_PROJECT_PRODUCTION_URL') ? `https://${get('VERCEL_PROJECT_PRODUCTION_URL')}` : '')).replace(/\/+$/, ''),
   /** Comma list of Privy ids, phones or emails allowed into /admin. */

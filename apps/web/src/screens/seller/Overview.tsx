@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Bell, Bot, Camera, ClipboardList, Flame, Loader2, Package, QrCode, Send, Sparkles, TrendingUp, Users, Wallet, Zap } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Bell, Bot, MessageCircle, Camera, ClipboardList, Flame, Loader2, Package, QrCode, Send, Sparkles, TrendingUp, Users, Wallet, Zap } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WEEK_INR, ago, inr, tierFor, toUsd, type Order, type Product } from '@zeeto/core';
@@ -126,12 +126,13 @@ export default function Overview() {
         </div>
 
         {/* Quick actions */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
             { to: '/sell/collect', icon: <QrCode />, l: 'Collect', d: 'Customer at the counter' },
             { to: '/sell/products?snap=1', icon: <Camera />, l: 'Snap & Sell', d: 'Photo → listing' },
             { to: '/sell/orders', icon: <ClipboardList />, l: 'Orders', d: `${s.open} open` },
             { to: '/sell/payments', icon: <Wallet />, l: 'Payments', d: 'USDT received · CSV' },
+            { to: '/sell/whatsapp', icon: <MessageCircle />, l: 'WhatsApp', d: 'Run the stall by chat' },
           ].map((x) => (
             <Link key={x.l} to={x.to} className="panel group flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:border-z/40">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-z-soft text-z transition group-hover:bg-z group-hover:text-z-ink">{x.icon}</span>

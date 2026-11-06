@@ -59,6 +59,9 @@ interface State {
   setPrice: (productId: string, priceInr: number) => void;
   publish: (draft: AiDraft, photo: string | null) => void;
   resetDemo: () => void;
+  /** Wallet this phone's personal data belongs to. A new sign-in starts empty: no sample orders, points or payments. */
+  owner: string | null;
+  startFresh: (owner: string) => void;
 }
 
 const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
@@ -199,12 +202,17 @@ export const useApp = create<State>()(persist((set, get) => {
       })),
 
     resetDemo: () => set(initial()),
+    owner: null,
+    startFresh: (owner) => {
+      if (get().owner === owner) return;
+      set({ owner, orders: [], history: [], points: 0, inbox: [], bag: { vendorId: null, lines: {} }, liked: [], saved: [] });
+    },
   };
 }, {
   name: 'zeeto-mobile-v3', // v3: points belong to a stall
   storage: createJSONStorage(() => AsyncStorage),
   // Bag and orders survive an app restart; nothing secret is stored here.
-  partialize: (s) => ({ follows: s.follows, liked: s.liked, saved: s.saved, products: s.products, bag: s.bag, orders: s.orders, stallOrders: s.stallOrders, points: s.points, history: s.history, stallOpen: s.stallOpen, stories: s.stories, alerts: s.alerts, inbox: s.inbox }),
+  partialize: (s) => ({ follows: s.follows, liked: s.liked, saved: s.saved, products: s.products, bag: s.bag, orders: s.orders, stallOrders: s.stallOrders, points: s.points, history: s.history, stallOpen: s.stallOpen, stories: s.stories, alerts: s.alerts, inbox: s.inbox, owner: s.owner }),
 }));
 
 export const useBagCount = () => useApp((s) => Object.values(s.bag.lines).reduce((a, n) => a + n, 0));

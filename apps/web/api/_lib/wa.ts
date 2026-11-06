@@ -58,3 +58,26 @@ export async function waMedia(id: string): Promise<{ mime: string; b64: string }
     return null;
   }
 }
+
+/** Up to 3 tap-to-reply buttons under a message. The tap comes back as an "interactive" message with the button id. */
+export const waButtons = (to: string, text: string, buttons: { id: string; title: string }[], header?: string) =>
+  send(to, {
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      ...(header ? { header: { type: 'text', text: header.slice(0, 60) } } : {}),
+      body: { text: text.slice(0, 1024) },
+      action: { buttons: buttons.slice(0, 3).map((b) => ({ type: 'reply', reply: { id: b.id.slice(0, 256), title: b.title.slice(0, 20) } })) },
+    },
+  });
+
+/** A "pick one" list (up to 10 rows), e.g. stalls near you. */
+export const waList = (to: string, text: string, button: string, rows: { id: string; title: string; description?: string }[]) =>
+  send(to, {
+    type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: text.slice(0, 1024) },
+      action: { button: button.slice(0, 20), sections: [{ title: 'Zeeto', rows: rows.slice(0, 10).map((r) => ({ id: r.id.slice(0, 200), title: r.title.slice(0, 24), ...(r.description ? { description: r.description.slice(0, 72) } : {}) })) }] },
+    },
+  });

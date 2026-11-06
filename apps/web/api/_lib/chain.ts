@@ -144,8 +144,11 @@ export async function relay(i: Intent, validBefore: string, sig: Hex): Promise<S
     ? { functionName: 'pay' as const, args: [c.orderRef, c.payer, c.merchant, BigInt(c.amount), 0n, BigInt(validBefore), sig] as const }
     : { functionName: 'refund' as const, args: [c.orderRef, c.payer, BigInt(c.amount), 0n, BigInt(validBefore), sig] as const };
 
-  const fees = await pub.estimateFeesPerGas();
-  if ((fees.maxFeePerGas ?? 0n) > parseGwei(String(env.relayMaxGwei))) throw new HttpError(503, 'The network is busy right now. Try again in a minute.', 'gas-spike');
+  // Compare the network's current gas price (not the wallet's padded max fee, which is ~2x base) with our ceiling.
+  // Whitechain's floor is 5 gwei, so the ceiling must sit well above it (default 50 gwei, RELAY_MAX_GWEI).
+  const price = await pub.getGasPrice();
+  const cap = parseGwei(String(env.relayMaxGwei));
+  if (price > cap) throw new HttpError(503, 'The network is busy right now. Try again in a minute.', 'gas-spike');
   let request;
   try {
     ({ request } = await pub.simulateContract({ account, address: c.contract, abi: CHECKOUT_ABI, ...args } as Parameters<typeof pub.simulateContract>[0]));
@@ -156,7 +159,9 @@ export async function relay(i: Intent, validBefore: string, sig: Hex): Promise<S
   const wbt = await pub.getBalance({ address: account.address });
   if (wbt < 10n ** 14n) { console.error('[relay] relayer low on WBT', account.address, formatEther(wbt)); throw off('Gasless payments (relayer needs WBT)'); }
   const wallet = createWalletClient({ account, chain: whitechain, transport: http(env.whitechainRpc, { timeout: 20_000 }) });
-  const hash = await wallet.writeContract(request as Parameters<typeof wallet.writeContract>[0]);
+  // Never pay more than the ceiling per gas, even if the network spikes between the check and the send.
+  const tip = price / 10n > 10n ** 9n ? 10n ** 9n : price / 10n;
+  const hash = await wallet.writeContract({ ...(request as Parameters<typeof wallet.writeContract>[0]), maxFeePerGas: cap, maxPriorityFeePerGas: tip } as Parameters<typeof wallet.writeContract>[0]);
   return confirm(hash, i);
 }
 
@@ -182,6 +187,26 @@ async function confirm(hash: Hex, i: Intent): Promise<Settled> {
     hash, block: Number(r.blockNumber), from: c.fn === 'pay' ? c.payer : c.merchant, to: c.fn === 'pay' ? c.merchant : c.payer,
     amount: BigInt(c.amount), gasWei: r.gasUsed * r.effectiveGasPrice, relayer: same(r.from, has.relay ? relayer().address : '') ? r.from : null,
   };
+}
+
+/**
+ * Reconcile: the payment may already be onchain even though we never saw the reply (the relayer's request timed out,
+ * the app was closed mid-payment...). Finds this order's Paid event from this payer and turns it into a Settled.
+ */
+export async function findPaid(i: Intent): Promise<Settled | null> {
+  if (!(await onchainPayment(i.call.orderRef, i.call.payer))) return null;
+  const pub = chain();
+  const latest = await pub.getBlockNumber();
+  const ev = CHECKOUT_ABI.find((x) => x.type === 'event' && x.name === 'Paid')!;
+  for (let to = latest, n = 0; n < 6; n++) {
+    const from = to > 9_999n ? to - 9_999n : 0n;
+    const logs = await pub.getLogs({ address: i.call.contract, event: ev as never, args: { orderRef: i.call.orderRef, payer: i.call.payer } as never, fromBlock: from, toBlock: to }).catch(() => []) as { transactionHash: Hex | null }[];
+    const hit = logs.find((l) => l.transactionHash);
+    if (hit) return confirm(hit.transactionHash as Hex, i);
+    if (from === 0n) break;
+    to = from - 1n;
+  }
+  return null;
 }
 
 /** For the admin dashboard and /api/health: who pays gas and how much it has left. */

@@ -48,16 +48,37 @@ Next step (post-hackathon): WhatsApp **Flows** to render the confirm screen insi
 - Stall commands only work from the number saved on that stall.
 - No money moves without the customer signing on the checkout page.
 
-## Setup (about 15 minutes)
+## What it looks like
 
-1. developers.facebook.com → Create app → type **Business** → add **WhatsApp**.
-2. WhatsApp → API setup: copy the **temporary access token** and the **Phone number ID**. Add your own number as a test recipient.
-3. App settings → Basic: copy the **App secret**.
-4. In Vercel (or `apps/web/.env.local`): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (any random string), `SITE_URL` (your deployed URL). Redeploy.
-5. WhatsApp → Configuration → Webhook: URL `https://<your-site>/api/whatsapp`, verify token = the same random string → Verify and save. Subscribe to **messages**.
-6. In Zeeto, open your stall → Store and set its WhatsApp number (with +91) to get stall alerts and commands.
-7. Test: from your phone, send `pay <your stall name> 20` to the test number.
+Every reply uses WhatsApp's own **reply buttons** and **lists**, so most of the time nobody types:
 
-The temporary token expires after 24 h; for the demo create a System User token in Business Settings.
+- New order → stall gets "🔔 New order #NT-576 · ₹120 · 1.43 USDT received" with **✅ Accept NT-576** / **📋 Open orders**. Accept → **📦 Ready NT-576** → **🤝 Done NT-576**. The customer is messaged at each step.
+- `today` → today's orders, sales, USDT received, open orders, best sellers, running low, with **📋 Open orders** / **✨ AI tips**.
+- `tips` (or any business question, "what should I restock?") → Gemini answers from that stall's own numbers only.
+- Photo → **✨ AI draft** with **✅ Publish** / **✕ Cancel**.
+- `refund` → a secure link: refunds move money, so the stall's wallet confirms them in Zeeto.
+- Customer `hi` → **📍 Stalls on Zeeto** / **🧾 My orders**; stalls come as a tap list; picking one shows its menu and an **Order on Zeeto** button.
 
-**Test-number rules (important for the demo):** with Meta's free test number, you can only message numbers added as test recipients (up to 5), and Zeeto can only send free-text replies and alerts within 24 h of that person's last message. So before the demo, each judge/merchant phone sends `hi` to the number once. Order alerts outside that window need an approved message template (post-hackathon).
+Merchants see all of this, with a live phone preview and the command list, at **/sell/whatsapp** (web) and from **My stall → Run your stall from WhatsApp** (phone app). Stall pages get a **WhatsApp** button once `WHATSAPP_DISPLAY_NUMBER` is set.
+
+Tested offline with fake Meta/Supabase/Gemini: `npm run test:whatsapp` (12 checks).
+
+## Setup: getting the keys (about 20 minutes)
+
+1. **Meta app.** developers.facebook.com → My Apps → **Create app** → use case **Other** → type **Business** → name it "Zeeto" → Create.
+2. **Add WhatsApp.** In the app dashboard → **Add product** → WhatsApp → **Set up**. Pick or create a Meta Business portfolio when asked.
+3. **API setup page** (WhatsApp → API Setup):
+   - Copy the **Phone number ID** (under the test "From" number) → `WHATSAPP_PHONE_NUMBER_ID`.
+   - Copy the test number itself, e.g. `+1 555 123 4567` → `WHATSAPP_DISPLAY_NUMBER`.
+   - Under "To", **add each demo phone** (yours, the merchant's, a judge's) and confirm the code WhatsApp sends. Test numbers can only message up to 5 such numbers.
+4. **Token.** For a quick test, copy the **temporary access token** on that page (lasts 24 h). For the demo, make a permanent one: business.facebook.com → Settings → **System users** → Add (Admin) → **Add assets** → your app (full control) → **Generate token** → pick the app, tick `whatsapp_business_messaging` and `whatsapp_business_management` → copy → `WHATSAPP_TOKEN`.
+5. **App secret.** App settings → **Basic** → App secret → Show → `WHATSAPP_APP_SECRET`.
+6. **Verify token.** Make up any random word, e.g. `zeeto-verify-7391` → `WHATSAPP_VERIFY_TOKEN`.
+7. **Vercel.** Project → Settings → Environment Variables → add the 5 above (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_DISPLAY_NUMBER`) as Secret, Production + Preview. Also `GEMINI_API_KEY` for the AI parts. **Redeploy.**
+8. **Check.** `https://zeeto.vercel.app/api/health` → `whatsapp: true`, `waNumber` = your test number.
+9. **Webhook.** Meta app → WhatsApp → **Configuration** → Webhook → Edit: Callback URL `https://zeeto.vercel.app/api/whatsapp`, Verify token = the word from step 6 → **Verify and save**. Then **Manage** webhook fields → subscribe **messages**.
+10. **Your stall's number.** zeeto.vercel.app/sell/store → WhatsApp number (the phone you'll text from) → Save.
+11. **Say hi.** From that phone, send `hi` to the test number. You get the stall menu with buttons. From another phone (a customer), send `hi` → customer menu.
+12. **Try it.** Stall: send a photo → Publish. Customer: `pay <your stall> 20` → tap Pay → sign in with that phone → paid → both phones get messages.
+
+If nothing comes back: check Vercel → Logs for `/api/whatsapp` (a `401` means the app secret is wrong; no request at all means the webhook isn't subscribed to **messages**).

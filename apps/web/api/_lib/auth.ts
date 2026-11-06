@@ -1,4 +1,5 @@
 import type { VercelRequest } from '@vercel/node';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { privateKeyToAccount } from 'viem/accounts';
 import { db } from './db.js';
@@ -34,13 +35,17 @@ export async function requireUser(req: VercelRequest): Promise<Me> {
   if (!has.auth) throw off('Sign-in');
   const token = String(req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
   if (!token) throw new HttpError(401, 'Sign in first.');
-  jwks ??= createRemoteJWKSet(new URL(`https://auth.privy.io/api/v1/apps/${env.privyAppId}/jwks.json`));
   let sub: string;
-  try {
-    const { payload } = await jwtVerify(token, jwks, { issuer: 'privy.io', audience: env.privyAppId });
-    sub = String(payload.sub);
-  } catch {
-    throw new HttpError(401, 'Your sign-in expired. Sign in again.');
+  if (token.startsWith('zm1.')) {
+    sub = verifyAppToken(token); // the phone app's session (issued by /api/session after a Privy sign-in)
+  } else {
+    jwks ??= createRemoteJWKSet(new URL(`https://auth.privy.io/api/v1/apps/${env.privyAppId}/jwks.json`));
+    try {
+      const { payload } = await jwtVerify(token, jwks, { issuer: 'privy.io', audience: env.privyAppId });
+      sub = String(payload.sub);
+    } catch {
+      throw new HttpError(401, 'Your sign-in expired. Sign in again.');
+    }
   }
 
   const hit = cache.get(sub);
@@ -76,4 +81,33 @@ export async function requireUser(req: VercelRequest): Promise<Me> {
     await db().from('users').upsert({ privy_id: me.id, address: me.address, label: me.label, phone: me.phone, seen_at: new Date().toISOString() }, { onConflict: 'privy_id' });
   }
   return me;
+}
+
+/**
+ * Phone-app sessions. Expo Go can't run Privy, so the app signs in on our web page; that page (holding a fresh Privy token)
+ * asks /api/session for this token and hands it back to the app. Format: zm1.<base64url payload>.<HMAC-SHA256>, keyed from the
+ * Privy app secret (never leaves the server). It names the Privy user and expires in 7 days; everything else (wallet,
+ * admin, phone) is still looked up from Privy on each use, exactly like a web sign-in.
+ */
+const APP_TOKEN_TTL_S = 7 * 24 * 3600;
+const appKey = () => createHmac('sha256', env.privySecret).update('zeeto-mobile-session-v1').digest();
+const b64 = (b: Buffer | string) => Buffer.from(b).toString('base64url');
+
+export function issueAppToken(sub: string): { token: string; expiresAt: string } {
+  if (!env.privySecret) throw off('Privy server key (PRIVY_APP_SECRET)');
+  const exp = Math.floor(Date.now() / 1000) + APP_TOKEN_TTL_S;
+  const body = b64(JSON.stringify({ sub, exp }));
+  return { token: `zm1.${body}.${b64(createHmac('sha256', appKey()).update(body).digest())}`, expiresAt: new Date(exp * 1000).toISOString() };
+}
+
+function verifyAppToken(t: string): string {
+  const [, body, mac] = t.split('.');
+  if (!body || !mac || !env.privySecret) throw new HttpError(401, 'Sign in again.');
+  const want = createHmac('sha256', appKey()).update(body).digest();
+  const got = Buffer.from(mac, 'base64url');
+  if (got.length !== want.length || !timingSafeEqual(got, want)) throw new HttpError(401, 'Sign in again.');
+  let p: { sub?: unknown; exp?: unknown };
+  try { p = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch { throw new HttpError(401, 'Sign in again.'); }
+  if (typeof p.sub !== 'string' || !p.sub.startsWith('did:privy:') || typeof p.exp !== 'number' || p.exp * 1000 < Date.now()) throw new HttpError(401, 'Your sign-in expired. Sign in again.');
+  return p.sub;
 }

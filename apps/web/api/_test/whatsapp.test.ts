@@ -104,5 +104,28 @@ const c = sent.length;
 const raw = JSON.stringify({ entry: [{ changes: [{ value: { messages: [{ id: 'wamid.1', from: STALL_PHONE, type: 'text', text: { body: 'orders' } }] } }] }] });
 await handler({ method: 'POST', body: raw, headers: { 'x-hub-signature-256': `sha256=${createHmac('sha256', 'sec').update(raw).digest('hex')}` }, query: {} } as any, { status() { return this; }, json() { return this; } } as any);
 assert.equal(sent.length, c); console.log('✓ Meta retry ignored');
+// 8. Stall taps a button (same as typing the command): "Today" report comes back with buttons.
+await send(STALL_PHONE, { type: 'interactive', interactive: { button_reply: { id: 'cmd:today', title: '📊 Today' } } });
+assert.match(sent.at(-1).interactive.body.text, /Today at Ravi Fresh Sabzi/); assert.equal(sent.at(-1).interactive.type, 'button');
+console.log('✓ tap "📊 Today" → sales report with buttons');
+// 9. Photo draft comes with Publish / Cancel buttons; tapping Cancel drops it.
+gem.push({ items: [{ name: 'Onion', unit: 'kg', priceInr: 30, qty: 10, confidence: 0.9 }], alert: { title: '', body: '', hi: '', mr: '', gu: '' } });
+await send(STALL_PHONE, { type: 'image', image: { id: '7777777' } });
+assert.deepEqual(sent.at(-1).interactive.action.buttons.map((b: any) => b.reply.id), ['cmd:publish', 'cmd:cancel']);
+await send(STALL_PHONE, { type: 'interactive', interactive: { button_reply: { id: 'cmd:cancel' } } });
+assert.match(lastText(), /Dropped that draft/); assert.equal(vendors.ravi.data.waDraft, undefined);
+console.log('✓ draft shows ✅ Publish / ✕ Cancel; tapping Cancel drops it');
+// 10. Refund never happens in chat: the stall gets a link to confirm with its wallet.
+await send(STALL_PHONE, { type: 'text', text: { body: 'refund' } });
+assert.match(sent.at(-1).interactive.action.parameters.url, /\/sell\/orders$/);
+console.log('✓ "refund" → secure link (wallet signs in Zeeto, never in chat)');
+// 11. Customer says hi → menu buttons; taps "Stalls" → a list; picks one → its menu with an Order button.
+await send('919822222222', { type: 'text', text: { body: 'hi' } });
+assert.deepEqual(sent.at(-1).interactive.action.buttons.map((b: any) => b.reply.id), ['cmd:find', 'cmd:orders']);
+await send('919822222222', { type: 'interactive', interactive: { button_reply: { id: 'cmd:find' } } });
+assert.equal(sent.at(-1).interactive.type, 'list'); assert.equal(sent.at(-1).interactive.action.sections[0].rows[0].id, 'stall:ravi');
+await send('919822222222', { type: 'interactive', interactive: { list_reply: { id: 'stall:ravi' } } });
+assert.match(sent.at(-1).interactive.body.text, /Ravi Fresh Sabzi/); assert.match(sent.at(-1).interactive.action.parameters.url, /\/s\/ravi$/);
+console.log('✓ customer: hi → menu → stall list → stall menu with "Order on Zeeto"');
 assert.equal(gem.length, 0);
 console.log('\nAll WhatsApp + Gemini checks passed.');

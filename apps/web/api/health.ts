@@ -9,5 +9,6 @@ export default route(['GET'], async () => ({
   features: { ...has },
   checkout: has.checkout ? env.checkout : null,
   relayer: (await relayerStatus())?.address ?? null,
+  waNumber: env.waDisplay || null,
   site: env.siteUrl || null, // links in WhatsApp messages point here
 }));

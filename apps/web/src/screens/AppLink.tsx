@@ -1,5 +1,7 @@
 import { LogIn, Smartphone } from 'lucide-react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { api, serverOn } from '../lib/api';
 import { short } from '@zeeto/core';
 import { Mark } from '../components/kit';
 import { useSession } from '../lib/auth';
@@ -24,10 +26,18 @@ export default function AppLink() {
   const s = useSession();
   const to = safeReturn(q.get('to'));
 
-  const go = () => {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const go = async () => {
     if (!to || !s.address) return;
+    setBusy(true); setErr('');
     to.searchParams.set('address', s.address);
     if (s.label) to.searchParams.set('label', s.label);
+    // The app's own 7-day session, so it can show your real orders and run your stall. Not your Privy login, not a key.
+    if (serverOn()) {
+      try { to.searchParams.set('token', (await api<{ token: string }>('/api/session', { body: {} })).token); }
+      catch (e) { setErr((e as Error).message); setBusy(false); return; }
+    }
     location.href = to.toString();
   };
 
@@ -51,8 +61,9 @@ export default function AppLink() {
       ) : (
         <>
           <h1 className="text-2xl font-extrabold">Connect the phone app?</h1>
-          <p className="text-mute">The app will see your wallet address <b className="font-mono text-chalk">{short(s.address)}</b> and balance. It can’t move money; payments always ask you here first.</p>
-          <button onClick={go} className="btn-z">Continue to Zeeto app</button>
+          <p className="text-mute">The app will see your wallet address <b className="font-mono text-chalk">{short(s.address)}</b>, your orders and your stall. It can’t move money: payments always open here for you to confirm.</p>
+          <button onClick={() => void go()} disabled={busy} className="btn-z">{busy ? 'Linking…' : 'Continue to Zeeto app'}</button>
+          {err && <p className="text-sm text-bad">{err}</p>}
         </>
       )}
     </div>

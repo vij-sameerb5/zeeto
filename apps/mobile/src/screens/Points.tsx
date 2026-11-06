@@ -5,14 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { REWARDS, VENDORS, ago, loyaltyCards } from '@zeeto/core';
 import { findVendor } from '../vendors';
 import { useApp } from '../store';
+import { useMyOrders } from '../server';
 import { C, mono } from '../theme';
 import { Face, Label, s as ui } from '../ui';
 
 /** Loyalty: one card per stall. Points earned at a stall are spent only there; visits set the tier. */
 export default function Points() {
   const top = useSafeAreaInsets().top;
-  const history = useApp((x) => x.history);
-  const orders = useApp((x) => x.orders);
+  const local = useApp((x) => x.history);
+  const orders = useMyOrders();
+  // Points from real (server) orders: ₹10 = 1 point at that stall, same rule as the website.
+  const history = useMemo(() => [
+    ...orders.filter((o) => o.server && ['paid', 'accepted', 'ready', 'done', 'part-refunded'].includes(o.status)).map((o) => ({ id: `srv-${o.id}`, label: `Order ${o.code}`, points: o.points, at: o.at, vendorId: o.vendorId })),
+    ...local,
+  ], [orders, local]);
   const redeem = useApp((x) => x.redeem);
   const cards = useMemo(() => loyaltyCards(history, orders), [history, orders]);
   const [open, setOpen] = useState<string | null>(cards[0]?.vendorId ?? null);

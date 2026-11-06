@@ -8,7 +8,7 @@ import { WEB_URL } from './web';
 
 /**
  * Expo Go can't run Privy's native SDK, so sign-in happens on the Zeeto web app in an in-app browser.
- * The web page sends back only the public wallet address and a masked label. No keys or tokens ever reach the phone app,
+ * The web page sends back the public wallet address, a masked label and a 7-day app session (no keys, no Privy login),
  * so this app can show your real balance but can't sign; payments that need a signature open on the web.
  */
 interface Session {
@@ -17,6 +17,8 @@ interface Session {
   setStartAs: (r: 'customer' | 'merchant' | null) => void;
   address: Hex | null;
   label: string | null;
+  /** The app's own 7-day Zeeto session (from /api/session). Lets the app read your orders and run your stall; it can't move money. */
+  token: string | null;
   link: () => Promise<'ok' | 'cancel' | 'no-web'>;
   unlink: () => void;
 }
@@ -28,6 +30,7 @@ export const useSession = create<Session>()(persist((set) => ({
   setStartAs: (startAs) => set({ startAs }),
   address: null,
   label: null,
+  token: null,
   link: async () => {
     if (!WEB_URL) return 'no-web';
     const back = Linking.createURL('auth');
@@ -37,11 +40,12 @@ export const useSession = create<Session>()(persist((set) => ({
     const address = typeof q.address === 'string' ? q.address : null;
     const label = typeof q.label === 'string' ? q.label.slice(0, 40) : null;
     if (!isAddr(address)) return 'cancel';
-    set({ address, label });
+    const token = typeof q.token === 'string' && /^zm1\.[\w-]+\.[\w-]+$/.test(q.token) ? q.token : null;
+    set({ address, label, token });
     return 'ok';
   },
-  unlink: () => set({ address: null, label: null }),
-}), { name: 'zeeto-mobile-session', storage: createJSONStorage(() => AsyncStorage), partialize: (s) => ({ address: s.address, label: s.label, startAs: s.startAs }) }));
+  unlink: () => set({ address: null, label: null, token: null }),
+}), { name: 'zeeto-mobile-session', storage: createJSONStorage(() => AsyncStorage), partialize: (s) => ({ address: s.address, label: s.label, startAs: s.startAs, token: s.token }) }));
 
 /** Plain JSON-RPC: no wallet library needed just to read balances. */
 async function rpc<T>(method: string, params: unknown[]): Promise<T> {

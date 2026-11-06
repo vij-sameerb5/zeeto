@@ -7,15 +7,16 @@ import { findVendor } from '../vendors';
 import { useNav } from '../nav';
 import { readBalances, useSession } from '../session';
 import { WEB_URL, openWeb } from '../web';
-import { useApp } from '../store';
+import { useMyOrders, useServer } from '../server';
 import { C, mono } from '../theme';
 import { Btn, Label, Sim, s as ui } from '../ui';
 
 export default function Wallet() {
   const nav = useNav();
   const top = useSafeAreaInsets().top;
-  const orders = useApp((x) => x.orders).filter((o) => o.payment);
+  const orders = useMyOrders().filter((o) => o.payment);
   const me = useSession();
+  const stallId = useServer((x) => x.stallId);
   const [bal, setBal] = useState<Balance[] | null>(null);
   const [err, setErr] = useState('');
   const [swap, setSwap] = useState(false);
@@ -82,7 +83,7 @@ export default function Wallet() {
       <Btn title="Scan a stall’s QR to pay" onPress={() => nav.push({ name: 'scan' })} right={<QrCode size={17} color={C.ink} />} />
       <Btn title="Swap ETH → USDC with Uniswap" kind="line" onPress={() => setSwap(true)} right={<ArrowRightLeft size={16} color={C.chalk} />} />
       <Btn title="Get test WBT from the faucet" kind="line" onPress={() => Linking.openURL(CHAINS.whitechain.faucet)} right={<Droplets size={16} color={C.chalk} />} />
-      {!!WEB_URL && <Btn title="Open my own stall" kind="line" onPress={() => openWeb('/sell/join')} right={<Store size={16} color={C.chalk} />} />}
+      {!!WEB_URL && <Btn title={stallId ? 'My stall' : 'Open my own stall'} kind="line" onPress={() => (stallId ? nav.push({ name: 'sell' }) : openWeb('/start?as=merchant'))} right={<Store size={16} color={C.chalk} />} />}
 
       <Label>Payments</Label>
       {!orders.length && <Text style={{ color: C.mute }}>No payments yet.</Text>}

@@ -3,7 +3,7 @@ import type { Settled } from './chain.js';
 import { check, db } from './db.js';
 import { HttpError, missing } from './http.js';
 import { pointsFor, WHITECHAIN } from './shared.js';
-import { site, waLink, waText } from './wa.js';
+import { site, waButtons, waLink, waText } from './wa.js';
 import { deliver } from './webhooks.js';
 import { env } from './env.js';
 
@@ -121,9 +121,10 @@ async function notifyPaid(o: OrderRow) {
   const v = (await db().from('vendors').select('data, wa_phone').eq('id', o.vendor_id).maybeSingle()).data as { data: { name?: string }; wa_phone: string | null } | null;
   const items = o.lines.map((l) => `${l.qty} ${l.unit} ${l.name}`).join(', ');
   if (v?.wa_phone) {
-    await waLink(v.wa_phone,
-      `New ${o.counter ? 'counter payment' : 'order'} ✅ ₹${o.inr} paid by ${o.customer}\n${items}\nCode: ${o.code}${o.counter ? '' : '\nReply "accept ' + o.code + '" or open your orders.'}`,
-      'Open orders', site('/sell/orders'));
+    const usdt = (Number(o.amount) / 1e6).toFixed(2);
+    const text = `₹${o.inr} · ${usdt} USDT received from ${o.customer}\n${items}\nPickup code: *${o.code}*\n✓ Already in your wallet. Gas paid by Zeeto.`;
+    if (o.counter) await waButtons(v.wa_phone, text, [{ id: 'cmd:today', title: '📊 Today' }], '💰 Paid at the counter');
+    else await waButtons(v.wa_phone, text, [{ id: `accept:${o.code}`, title: `✅ Accept ${o.code}` }, { id: 'cmd:orders', title: '📋 Open orders' }], `🔔 New order #${o.code}`);
   }
   const c = (await db().from('users').select('phone').eq('privy_id', o.customer_id).maybeSingle()).data as { phone: string | null } | null;
   if (c?.phone) await waLink(c.phone, `Paid ₹${o.inr} to ${v?.data?.name ?? 'the stall'} ✅\nYour pickup code is ${o.code}. Say it at the stall.`, 'View order', site(`/orders/${o.id}`));

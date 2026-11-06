@@ -1,6 +1,6 @@
 import type { Hex } from 'viem';
 import { requireUser, type Me } from './_lib/auth.js';
-import { checkSignature, payIntent, refundIntent, relay, verifySubmitted, type Intent } from './_lib/chain.js';
+import { checkSignature, findPaid, payIntent, refundIntent, relay, verifySubmitted, type Intent } from './_lib/chain.js';
 import { check, db } from './_lib/db.js';
 import { has } from './_lib/env.js';
 import { bad, body, deny, HttpError, int, isHash, route, str } from './_lib/http.js';
@@ -113,6 +113,9 @@ async function create(me: Me, b: B) {
   const pending = await db().from('orders').select('id', { count: 'exact', head: true }).eq('customer_id', me.id).eq('status', 'paying').gte('created_at', new Date(Date.now() - PAY_WINDOW_MS).toISOString());
   if ((pending.count ?? 0) >= 5) throw new HttpError(429, 'Finish or wait for your open payments first.');
 
+  // A fresh bag order replaces this person's older unpaid ones at the same stall (each retry used to add one).
+  if (!requestId) await db().from('orders').update({ status: 'expired' }).eq('customer_id', me.id).eq('vendor_id', v.id).eq('status', 'paying').is('request_id', null);
+
   const id = newId('o', 5);
   const row = check(await db().from('orders').insert({
     id, vendor_id: v.id, customer_id: me.id, customer: me.label, payer: me.address, code: pickupCode(), lines, inr, usd,
@@ -143,7 +146,8 @@ async function pay(me: Me, b: B) {
   try {
     await checkSignature(intent, signed, signature);
   } catch (e) {
-    if (e instanceof HttpError && e.code === 'already-used') return { order: toOrder(await getOrder(o.id)) };
+    // Already used = it's onchain (maybe we never saw the reply last time). Settle from the chain instead of failing.
+    if (e instanceof HttpError && e.code === 'already-used') return { order: toOrder(await reconcile(o, intent)) };
     throw e;
   }
   if (!has.relay) throw new HttpError(503, 'Gas-free payments are off. Pay from your wallet instead.', 'relay-off');
@@ -158,8 +162,18 @@ async function retryIntent(me: Me, b: B) {
   const o = await getOrder(str(b.orderId, 40));
   if (o.customer_id !== me.id) throw deny();
   if (o.status !== 'paying') return { order: toOrder(o) };
+  const intent = await payIntent(o, (await getVendor(o.vendor_id)).wallet);
+  const done = await findPaid(intent).catch(() => null); // paid already? then there's nothing to sign
+  if (done) return { order: toOrder(await settle(o, done, !!done.relayer)) };
   if (Date.now() - Date.parse(o.created_at) > PAY_WINDOW_MS) throw bad('This order expired. Start again from your bag.');
-  return { order: toOrder(o), intent: await payIntent(o, (await getVendor(o.vendor_id)).wallet) };
+  return { order: toOrder(o), intent };
+}
+
+async function reconcile(o: OrderRow, intent: Intent) {
+  const s = await findPaid(intent);
+  if (!s) return getOrder(o.id);
+  if (s.relayer) await logRelay({ kind: 'pay', order_id: o.id, user_id: o.customer_id, vendor_id: o.vendor_id, tx_hash: s.hash, gas_wei: s.gasWei }).catch(() => undefined);
+  return settle(o, s, !!s.relayer);
 }
 
 function sigOf(b: B): { signed: Intent['message']; signature: Hex } {

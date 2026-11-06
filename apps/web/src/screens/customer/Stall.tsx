@@ -1,4 +1,5 @@
-import { BadgeCheck, Bell, BellRing, ChevronLeft, Clock, Grid3x3, Info, Languages, Leaf, MapPin, Play, Share2, ShoppingBag, Star, Youtube } from 'lucide-react';
+import { waMe } from '../../lib/api';
+import { BadgeCheck, MessageCircle, Bell, BellRing, ChevronLeft, Clock, Grid3x3, Info, Languages, Leaf, MapPin, Play, Share2, ShoppingBag, Star, Youtube } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CATEGORIES, ME, POSTS, UNITS, ago, distance, inr, km } from '@zeeto/core';
@@ -62,6 +63,7 @@ export default function Stall() {
           <button onClick={() => follow(v.id)} className={following ? 'btn-line' : 'btn-z'}>{following ? <BellRing size={17} /> : <Bell size={17} />}{following ? 'Following' : 'Follow'}</button>
           <button onClick={() => setTab('shop')} className="btn-chalk">Order for pickup</button>
           <a className="btn-line" href={`https://www.google.com/maps/search/?api=1&query=${v.location.lat},${v.location.lng}`} target="_blank" rel="noreferrer"><MapPin size={17} /> Directions</a>
+          {waMe(`stall ${v.id}`) && <a className="btn-line" href={waMe(`stall ${v.id}`)!} target="_blank" rel="noreferrer"><MessageCircle size={17} /> WhatsApp</a>}
         </div>
         <div className="mt-4"><Tags v={v} /></div>
         {card && card.visits > 0 && (
